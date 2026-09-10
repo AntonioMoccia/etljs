@@ -10,6 +10,7 @@ import {
   type TransformerPlugin,
 } from "@etl-js/contracts";
 import { z } from "zod";
+import { configReader } from "./shared.js";
 
 /**
  * Porta le intestazioni del cliente sui nomi usati dal gestionale. E' il
@@ -44,17 +45,10 @@ export const RenameErrorCodes = {
   RENAME_MISSING_COLUMN: "RENAME_MISSING_COLUMN",
 } as const;
 
-function parseConfig(raw: unknown): RenameConfig {
-  const result = renameConfigSchema.safeParse(raw);
-  if (!result.success) {
-    throw configInvalid(
-      "rename",
-      result.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
-    );
-  }
-  const config = result.data;
 
-  // Due colonne che finiscono sullo stesso nome perderebbero un dato in silenzio.
+
+/** Due colonne che finiscono sullo stesso nome perderebbero un dato in silenzio. */
+const configOf = configReader("rename", renameConfigSchema, (config) => {
   const seen = new Map<string, string>();
   for (const [from, to] of Object.entries(config.map)) {
     const previous = seen.get(to);
@@ -65,19 +59,7 @@ function parseConfig(raw: unknown): RenameConfig {
     }
     seen.set(to, from);
   }
-  return config;
-}
-
-const parsedConfigs = new WeakMap<object, RenameConfig>();
-
-function configOf(raw: unknown): RenameConfig {
-  if (typeof raw !== "object" || raw === null) return parseConfig(raw);
-  const cached = parsedConfigs.get(raw);
-  if (cached) return cached;
-  const parsed = parseConfig(raw);
-  parsedConfigs.set(raw, parsed);
-  return parsed;
-}
+});
 
 export const renameTransformer: Transformer = {
   async transform(batch: Batch, rawConfig: unknown, _ctx: Ctx): Promise<TransformResult> {
@@ -129,7 +111,7 @@ export const renameTransformer: Transformer = {
   },
 };
 
-export const plugin: TransformerPlugin = {
+export const renamePlugin: TransformerPlugin = {
   manifest: {
     name: "rename",
     version: "0.1.0",
@@ -141,4 +123,3 @@ export const plugin: TransformerPlugin = {
   impl: renameTransformer,
 };
 
-export default plugin;

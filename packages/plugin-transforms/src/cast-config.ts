@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { configInvalid } from "@etl-js/contracts";
 
 /** Politiche comuni a ogni conversione. */
 const common = {
@@ -58,14 +57,3 @@ export const castConfigSchema = z.record(z.string().min(1), castFieldSchema);
 export type CastConfig = z.infer<typeof castConfigSchema>;
 export type CastField = z.infer<typeof castFieldSchema>;
 
-export function parseCastConfig(config: unknown): CastConfig {
-  const result = castConfigSchema.safeParse(config);
-  if (result.success) return result.data;
-  throw configInvalid(
-    "cast",
-    result.error.issues.map((issue) => ({
-      path: issue.path.join("."),
-      message: issue.message,
-    })),
-  );
-}

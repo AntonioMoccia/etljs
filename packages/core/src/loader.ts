@@ -40,20 +40,40 @@ function isModuleNotFound(error: unknown): boolean {
   return code === "ERR_MODULE_NOT_FOUND" || code === "MODULE_NOT_FOUND";
 }
 
-/** Estrae il plugin dal modulo, spiegando cosa avrebbe dovuto esportare. */
-function pluginFromModule(specifier: string, name: string, loaded: unknown): Plugin {
+function isPlugin(value: unknown): value is Plugin {
+  return typeof value === "object" && value !== null && "manifest" in value && "impl" in value;
+}
+
+/**
+ * Tutti i plugin contenuti nel modulo. Un pacchetto puo' portarne uno
+ * (`plugin` o default export) o un elenco (`plugins`): un pacchetto e'
+ * un'unita' di distribuzione, un plugin un'unita' di configurazione.
+ */
+function pluginsFromModule(specifier: string, name: string, loaded: unknown): Plugin[] {
   const module = loaded as PluginModule | undefined;
-  const plugin = module?.plugin ?? module?.default;
-  if (!plugin || typeof plugin !== "object" || !("manifest" in plugin) || !("impl" in plugin)) {
+  const bundle = module?.plugins;
+
+  if (Array.isArray(bundle)) {
+    if (bundle.length === 0 || !bundle.every(isPlugin)) {
+      throw new IngestError(
+        `Il pacchetto "${specifier}" esporta "plugins" ma non e' un elenco di plugin validi`,
+        { code: ErrorCodes.INVALID_USAGE, context: { specifier, requested: name } },
+      );
+    }
+    return bundle;
+  }
+
+  const single = module?.plugin ?? module?.default;
+  if (!isPlugin(single)) {
     throw new IngestError(
-      `Il pacchetto "${specifier}" non espone un plugin: serve "export const plugin: Plugin" (o un default export)`,
+      `Il pacchetto "${specifier}" non espone un plugin: serve "export const plugin: Plugin" (o "plugins", o un default export)`,
       {
         code: ErrorCodes.INVALID_USAGE,
         context: { specifier, requested: name, exported: Object.keys(module ?? {}) },
       },
     );
   }
-  return plugin;
+  return [single];
 }
 
 /**
@@ -62,6 +82,23 @@ function pluginFromModule(specifier: string, name: string, loaded: unknown): Plu
  * non a meta' di un'importazione.
  */
 export async function loadPlugin(name: string, options: LoaderOptions = {}): Promise<Plugin> {
+  return (await loadPluginPackage(name, options)).plugin;
+}
+
+/** Il plugin richiesto insieme agli altri che viaggiano nello stesso pacchetto. */
+export interface LoadedPackage {
+  plugin: Plugin;
+  siblings: Plugin[];
+}
+
+/**
+ * Come `loadPlugin`, ma restituisce anche i fratelli: registrarli tutti evita
+ * di reimportare lo stesso pacchetto per ogni plugin che contiene.
+ */
+export async function loadPluginPackage(
+  name: string,
+  options: LoaderOptions = {},
+): Promise<LoadedPackage> {
   const importModule =
     options.importModule ?? ((specifier: string) => import(/* @vite-ignore */ specifier));
   const tried = candidateSpecifiers(name, options);
@@ -84,20 +121,31 @@ export async function loadPlugin(name: string, options: LoaderOptions = {}): Pro
       );
     }
 
-    const plugin = pluginFromModule(specifier, name, loaded);
-    // Fa fallire subito i protocolli incompatibili, con nome e versione.
-    assertUsableManifest(plugin.manifest);
+    const found = pluginsFromModule(specifier, name, loaded);
+    // Un pacchetto si prende o si lascia tutto intero: un fratello con il
+    // protocollo sbagliato e' un pacchetto da aggiornare, non un dettaglio.
+    for (const plugin of found) assertUsableManifest(plugin.manifest);
 
-    if (plugin.manifest.name !== name) {
+    const wanted = found.find((plugin) => plugin.manifest.name === name);
+    if (!wanted) {
+      const contiene = found.map((plugin) => plugin.manifest.name);
+      // Un pacchetto singolo che dichiara un altro nome e' un errore d'uso;
+      // un pacchetto che ne contiene molti semplicemente non ha quello chiesto.
+      if (found.length === 1) {
+        throw new IngestError(
+          `Il pacchetto "${specifier}" dichiara il plugin "${contiene[0] ?? ""}", ma e' stato chiesto "${name}"`,
+          {
+            code: ErrorCodes.INVALID_USAGE,
+            context: { specifier, declared: contiene[0], requested: name },
+          },
+        );
+      }
       throw new IngestError(
-        `Il pacchetto "${specifier}" dichiara il plugin "${plugin.manifest.name}", ma e' stato chiesto "${name}"`,
-        {
-          code: ErrorCodes.INVALID_USAGE,
-          context: { specifier, declared: plugin.manifest.name, requested: name },
-        },
+        `Il pacchetto "${specifier}" non contiene il plugin "${name}"`,
+        { code: ErrorCodes.PLUGIN_NOT_FOUND, context: { specifier, requested: name, contiene } },
       );
     }
-    return plugin;
+    return { plugin: wanted, siblings: found };
   }
 
   throw new IngestError(
@@ -126,9 +174,11 @@ export function createLoader(options: LoaderOptions = {}): PluginResolver {
     const pending = inFlight.get(name);
     if (pending) return pending;
 
-    const loading = loadPlugin(name, options)
-      .then((plugin) => {
-        registry.register(plugin);
+    const loading = loadPluginPackage(name, options)
+      .then(({ plugin, siblings }) => {
+        // Si registra tutto il pacchetto: il prossimo plugin dello stesso
+        // pacchetto lo trovera' gia' pronto, senza un secondo import.
+        for (const sibling of siblings) registry.register(sibling);
         return plugin;
       })
       .finally(() => {

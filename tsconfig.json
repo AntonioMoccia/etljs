@@ -20,19 +20,7 @@
       "path": "packages/plugin-lookup"
     },
     {
-      "path": "packages/plugin-cast"
-    },
-    {
-      "path": "packages/plugin-filter"
-    },
-    {
-      "path": "packages/plugin-default"
-    },
-    {
-      "path": "packages/plugin-validate"
-    },
-    {
-      "path": "packages/plugin-rename"
+      "path": "packages/plugin-transforms"
     },
     {
       "path": "packages/cli"

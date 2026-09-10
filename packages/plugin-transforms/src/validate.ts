@@ -1,6 +1,8 @@
 import {
   PROTOCOL_VERSION,
   configInvalid,
+  createRunCache,
+  isBlank,
   type Batch,
   type Ctx,
   type Failed,
@@ -11,6 +13,7 @@ import {
   type TransformerPlugin,
 } from "@etl-js/contracts";
 import { z } from "zod";
+import { compileRegex, configReader } from "./shared.js";
 
 /**
  * Controlla le regole di merito sui dati gia' convertiti: quantita' minime,
@@ -51,64 +54,14 @@ export const ValidateErrorCodes = {
 /** Chiavi che descrivono la regola, non un controllo. */
 const NOT_A_CHECK = new Set(["field", "severity", "message", "ignoreCase"]);
 
-function parseConfig(raw: unknown): ValidateConfig {
-  const result = validateConfigSchema.safeParse(raw);
-  if (!result.success) {
-    throw configInvalid(
-      "validate",
-      result.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
-    );
-  }
-  result.data.rules.forEach((rule, index) => {
-    const checks = Object.keys(rule).filter(
-      (key) => !NOT_A_CHECK.has(key) && rule[key as keyof Rule] !== undefined,
-    );
-    if (checks.length === 0) {
-      throw configInvalid("validate", [
-        { path: `rules[${index}]`, message: "la regola non controlla nulla" },
-      ]);
-    }
-    if (rule.matches !== undefined) compileRegex(rule, `rules[${index}].matches`);
-  });
-  return result.data;
-}
 
-function compileRegex(rule: Rule, path: string): RegExp {
-  try {
-    return new RegExp(rule.matches ?? "", rule.ignoreCase ? "i" : "");
-  } catch (error) {
-    throw configInvalid("validate", [
-      { path, message: `espressione regolare non valida: ${String(error)}` },
-    ]);
-  }
-}
 
-const parsedConfigs = new WeakMap<object, ValidateConfig>();
 
-function configOf(raw: unknown): ValidateConfig {
-  if (typeof raw !== "object" || raw === null) return parseConfig(raw);
-  const cached = parsedConfigs.get(raw);
-  if (cached) return cached;
-  const parsed = parseConfig(raw);
-  parsedConfigs.set(raw, parsed);
-  return parsed;
-}
-
-/** Valori gia' visti, per le regole `unique`, tenuti per run e liberati da flush(). */
-const seenByRun = new Map<string, Map<string, Set<string>>>();
-const MAX_CACHED_RUNS = 8;
+/** Valori gia' visti, per le regole `unique`, liberati da flush() a fine run. */
+const seenByRun = createRunCache<Map<string, Set<string>>>(() => new Map());
 
 function seenFor(runId: string, field: string): Set<string> {
-  let perRun = seenByRun.get(runId);
-  if (!perRun) {
-    perRun = new Map();
-    seenByRun.set(runId, perRun);
-    while (seenByRun.size > MAX_CACHED_RUNS) {
-      const oldest = seenByRun.keys().next();
-      if (oldest.done) break;
-      seenByRun.delete(oldest.value);
-    }
-  }
+  const perRun = seenByRun.for(runId);
   let values = perRun.get(field);
   if (!values) {
     values = new Set();
@@ -117,9 +70,6 @@ function seenFor(runId: string, field: string): Set<string> {
   return values;
 }
 
-function isBlank(value: unknown): boolean {
-  return value === null || value === undefined || String(value).trim() === "";
-}
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
 
@@ -163,7 +113,10 @@ function violation(rule: Rule, row: Row, runId: string): string | undefined {
   if (rule.maxLength !== undefined && text.length > rule.maxLength) {
     return `${label}: "${text}" supera i ${rule.maxLength} caratteri`;
   }
-  if (rule.matches !== undefined && !compileRegex(rule, rule.field).test(text)) {
+  if (
+    rule.matches !== undefined &&
+    !compileRegex("validate", rule.field, rule.matches, rule.ignoreCase).test(text)
+  ) {
     return `${label}: "${text}" non corrisponde a ${rule.matches}`;
   }
   if (rule.in !== undefined && !rule.in.some((entry) => String(entry) === text)) {
@@ -189,6 +142,22 @@ function violation(rule: Rule, row: Row, runId: string): string | undefined {
 
   return undefined;
 }
+
+const configOf = configReader("validate", validateConfigSchema, (config) => {
+  config.rules.forEach((rule, index) => {
+    const checks = Object.keys(rule).filter(
+      (key) => !NOT_A_CHECK.has(key) && rule[key as keyof typeof rule] !== undefined,
+    );
+    if (checks.length === 0) {
+      throw configInvalid("validate", [
+        { path: `rules[${index}]`, message: "la regola non controlla nulla" },
+      ]);
+    }
+    if (rule.matches !== undefined) {
+      compileRegex("validate", `rules[${index}].matches`, rule.matches, rule.ignoreCase);
+    }
+  });
+});
 
 export const validateTransformer: Transformer = {
   async transform(batch: Batch, rawConfig: unknown, ctx: Ctx): Promise<TransformResult> {
@@ -221,7 +190,7 @@ export const validateTransformer: Transformer = {
   },
 
   async flush(ctx: Ctx): Promise<TransformResult> {
-    seenByRun.delete(ctx.runId);
+    seenByRun.release(ctx.runId);
     return {
       batch: { rows: [], meta: { runId: ctx.runId, source: "validate", offset: 0 } },
       failed: [],
@@ -229,7 +198,7 @@ export const validateTransformer: Transformer = {
   },
 };
 
-export const plugin: TransformerPlugin = {
+export const validatePlugin: TransformerPlugin = {
   manifest: {
     name: "validate",
     version: "0.1.0",
@@ -242,4 +211,3 @@ export const plugin: TransformerPlugin = {
   impl: validateTransformer,
 };
 
-export default plugin;

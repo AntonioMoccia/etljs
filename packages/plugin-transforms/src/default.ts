@@ -1,6 +1,5 @@
 import {
   PROTOCOL_VERSION,
-  configInvalid,
   type Batch,
   type Ctx,
   type Row,
@@ -9,6 +8,7 @@ import {
   type TransformerPlugin,
 } from "@etl-js/contracts";
 import { z } from "zod";
+import { configReader } from "./shared.js";
 
 const literal = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
@@ -42,25 +42,7 @@ export const defaultConfigSchema = z
 
 export type DefaultConfig = z.infer<typeof defaultConfigSchema>;
 
-function parseConfig(raw: unknown): DefaultConfig {
-  const result = defaultConfigSchema.safeParse(raw);
-  if (result.success) return result.data;
-  throw configInvalid(
-    "default",
-    result.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
-  );
-}
 
-const parsedConfigs = new WeakMap<object, DefaultConfig>();
-
-function configOf(raw: unknown): DefaultConfig {
-  if (typeof raw !== "object" || raw === null) return parseConfig(raw);
-  const cached = parsedConfigs.get(raw);
-  if (cached) return cached;
-  const parsed = parseConfig(raw);
-  parsedConfigs.set(raw, parsed);
-  return parsed;
-}
 
 function shouldFill(row: Row, field: string, when: "missing" | "empty" | "always"): boolean {
   if (when === "always") return true;
@@ -69,6 +51,8 @@ function shouldFill(row: Row, field: string, when: "missing" | "empty" | "always
   const value = row[field];
   return value === null || value === undefined || String(value).trim() === "";
 }
+
+const configOf = configReader("default", defaultConfigSchema);
 
 export const defaultTransformer: Transformer = {
   async transform(batch: Batch, rawConfig: unknown, _ctx: Ctx): Promise<TransformResult> {
@@ -109,7 +93,7 @@ export const defaultTransformer: Transformer = {
  * cosi' la tabella di atterraggio sa da dove viene ogni record senza che il
  * motore debba conoscere le colonne di nessuno (I2).
  */
-export const plugin: TransformerPlugin = {
+export const defaultPlugin: TransformerPlugin = {
   manifest: {
     name: "default",
     version: "0.1.0",
@@ -121,4 +105,3 @@ export const plugin: TransformerPlugin = {
   impl: defaultTransformer,
 };
 
-export default plugin;

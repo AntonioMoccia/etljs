@@ -25,6 +25,7 @@
     "@etl-js/contracts": "^0.1.0",
     "@etl-js/core": "^0.1.0",
     "@etl-js/plugin-csv": "^0.1.0",
-    "@etl-js/plugin-postgres": "^0.1.0"
+    "@etl-js/plugin-postgres": "^0.1.0",
+    "@etl-js/plugin-transforms": "^0.1.0"
   }
 }

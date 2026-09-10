@@ -1,12 +1,17 @@
 import {
+  PROTOCOL_VERSION,
+  isBlank,
   type Batch,
   type Ctx,
   type Failed,
   type Row,
   type TransformResult,
   type Transformer,
+  type TransformerPlugin,
 } from "@etl-js/contracts";
-import { parseCastConfig, type CastConfig, type CastField } from "./config.js";
+import { z } from "zod";
+import { castConfigSchema, type CastField } from "./cast-config.js";
+import { configReader } from "./shared.js";
 import {
   compileFormat,
   isoWeekMonday,
@@ -31,20 +36,7 @@ function formatFor(format: string): CompiledFormat {
   return compiled;
 }
 
-const parsedConfigs = new WeakMap<object, CastConfig>();
-
-function configOf(raw: unknown): CastConfig {
-  if (typeof raw !== "object" || raw === null) return parseCastConfig(raw);
-  const cached = parsedConfigs.get(raw);
-  if (cached) return cached;
-  const parsed = parseCastConfig(raw);
-  parsedConfigs.set(raw, parsed);
-  return parsed;
-}
-
-function isBlank(value: unknown): boolean {
-  return value === null || value === undefined || (typeof value === "string" && value.trim() === "");
-}
+const configOf = configReader("cast", castConfigSchema);
 
 interface NumberOptions {
   decimal: string;
@@ -205,4 +197,25 @@ export const castTransformer: Transformer = {
 
     return { batch: { ...batch, rows: kept }, failed };
   },
+};
+
+/**
+ * Converte i valori grezzi in cio' che il database si aspetta. Tutto cio' che
+ * cambia da cliente a cliente - formato data, separatore decimale, parole per
+ * vero e falso - e' un valore in questa config (I8).
+ *
+ * Le date escono come stringhe ISO, non come oggetti Date: un Batch deve
+ * restare serializzabile (I3).
+ */
+export const castPlugin: TransformerPlugin = {
+  manifest: {
+    name: "cast",
+    version: "0.1.0",
+    kind: "transformer",
+    protocol: PROTOCOL_VERSION,
+    category: "conversione",
+    capabilities: ["date", "settimane-iso", "numeri-localizzati"],
+    configSchema: z.toJSONSchema(castConfigSchema, { io: "input" }),
+  },
+  impl: castTransformer,
 };

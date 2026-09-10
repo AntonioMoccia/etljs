@@ -1,5 +1,11 @@
-import { PROTOCOL_VERSION, configInvalid, type TransformerPlugin } from "@etl-js/contracts";
+import {
+  PROTOCOL_VERSION,
+  configInvalid,
+  isBlank,
+  type TransformerPlugin,
+} from "@etl-js/contracts";
 import { z } from "zod";
+import { compileRegex, configReader } from "./shared.js";
 import {
   type Batch,
   type Ctx,
@@ -54,22 +60,18 @@ export const FilterErrorCodes = {
 /** Le chiavi che descrivono il campo, non una condizione da verificare. */
 const NOT_A_TEST = new Set(["field", "ignoreCase"]);
 
-function parseConfig(raw: unknown): FilterConfig {
-  const result = filterConfigSchema.safeParse(raw);
-  if (!result.success) {
-    throw configInvalid(
-      "filter",
-      result.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
-    );
-  }
-  const config = result.data;
+/**
+ * Una regola senza condizioni scarterebbe ogni riga, e una regola senza campo
+ * non saprebbe dove guardare: sono errori di config, non comportamenti.
+ */
+const configOf = configReader("filter", filterConfigSchema, (config) => {
   for (const [group, rules] of [
     ["keep", config.keep],
     ["drop", config.drop],
   ] as const) {
     (rules ?? []).forEach((rule, index) => {
       const tests = Object.keys(rule).filter(
-        (key) => !NOT_A_TEST.has(key) && rule[key as keyof Condition] !== undefined,
+        (key) => !NOT_A_TEST.has(key) && rule[key as keyof typeof rule] !== undefined,
       );
       if (tests.length === 0) {
         throw configInvalid("filter", [
@@ -81,28 +83,21 @@ function parseConfig(raw: unknown): FilterConfig {
       }
       if (!rule.allEmpty && rule.field === undefined) {
         throw configInvalid("filter", [
-          { path: `${group}[${index}].field`, message: "manca il campo su cui applicare la condizione" },
+          {
+            path: `${group}[${index}].field`,
+            message: "manca il campo su cui applicare la condizione",
+          },
         ]);
       }
-      if (rule.matches !== undefined) compileRegex(rule, `${group}[${index}].matches`);
+      if (rule.matches !== undefined) {
+        compileRegex("filter", `${group}[${index}].matches`, rule.matches, rule.ignoreCase);
+      }
     });
   }
-  return config;
-}
+});
 
-function compileRegex(rule: Condition, path: string): RegExp {
-  try {
-    return new RegExp(rule.matches ?? "", rule.ignoreCase ? "i" : "");
-  } catch (error) {
-    throw configInvalid("filter", [
-      { path, message: `espressione regolare non valida: ${String(error)}` },
-    ]);
-  }
-}
 
-function isEmpty(value: unknown): boolean {
-  return value === null || value === undefined || String(value).trim() === "";
-}
+
 
 function asNumber(value: unknown): number | undefined {
   if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
@@ -113,17 +108,22 @@ function asNumber(value: unknown): number | undefined {
 
 /** Tutte le condizioni di una regola devono valere insieme. */
 function matches(rule: Condition, row: Row, path: string): boolean {
-  if (rule.allEmpty === true && !Object.values(row).every(isEmpty)) return false;
-  if (rule.allEmpty === false && Object.values(row).every(isEmpty)) return false;
+  if (rule.allEmpty === true && !Object.values(row).every(isBlank)) return false;
+  if (rule.allEmpty === false && Object.values(row).every(isBlank)) return false;
   if (rule.field === undefined) return true;
 
   const value = row[rule.field];
 
-  if (rule.empty !== undefined && isEmpty(value) !== rule.empty) return false;
-  if (rule.notEmpty !== undefined && isEmpty(value) === rule.notEmpty) return false;
+  if (rule.empty !== undefined && isBlank(value) !== rule.empty) return false;
+  if (rule.notEmpty !== undefined && isBlank(value) === rule.notEmpty) return false;
   if (rule.equals !== undefined && String(value ?? "") !== String(rule.equals ?? "")) return false;
   if (rule.notEquals !== undefined && String(value ?? "") === String(rule.notEquals ?? "")) return false;
-  if (rule.matches !== undefined && !compileRegex(rule, path).test(String(value ?? ""))) return false;
+  if (
+    rule.matches !== undefined &&
+    !compileRegex("filter", path, rule.matches, rule.ignoreCase).test(String(value ?? ""))
+  ) {
+    return false;
+  }
   if (rule.in !== undefined && !rule.in.some((entry) => String(entry ?? "") === String(value ?? ""))) {
     return false;
   }
@@ -137,16 +137,6 @@ function matches(rule: Condition, row: Row, path: string): boolean {
   return true;
 }
 
-const parsedConfigs = new WeakMap<object, FilterConfig>();
-
-function configOf(raw: unknown): FilterConfig {
-  if (typeof raw !== "object" || raw === null) return parseConfig(raw);
-  const cached = parsedConfigs.get(raw);
-  if (cached) return cached;
-  const parsed = parseConfig(raw);
-  parsedConfigs.set(raw, parsed);
-  return parsed;
-}
 
 export const filterTransformer: Transformer = {
   async transform(batch: Batch, rawConfig: unknown, _ctx: Ctx): Promise<TransformResult> {
@@ -195,7 +185,7 @@ export const filterTransformer: Transformer = {
   },
 };
 
-export const plugin: TransformerPlugin = {
+export const filterPlugin: TransformerPlugin = {
   manifest: {
     name: "filter",
     version: "0.1.0",
@@ -207,4 +197,3 @@ export const plugin: TransformerPlugin = {
   impl: filterTransformer,
 };
 
-export default plugin;

@@ -67,10 +67,16 @@ export interface WriterPlugin {
 export type Plugin = ReaderPlugin | TransformerPlugin | WriterPlugin;
 
 /**
- * Forma attesa del modulo npm di un plugin: `export const plugin = ...`
- * (accettato anche come default export, per comodita').
+ * Forma attesa del modulo npm di un plugin.
+ *
+ * Un pacchetto puo' contenerne **uno** (`export const plugin = ...`, o il
+ * default export) oppure **piu' d'uno** (`export const plugins = [...]`).
+ * Un pacchetto e' un'unita' di distribuzione, un plugin un'unita' di
+ * configurazione: non c'e' motivo perche' coincidano. La libreria standard dei
+ * transformer viaggia insieme, i plugin di terzi di solito no.
  */
 export interface PluginModule {
+  plugins?: Plugin[];
   plugin?: Plugin;
   default?: Plugin;
 }

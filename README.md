@@ -41,6 +41,11 @@ Il `core` non conosce nessun plugin: li riceve in una `Registry` o li carica per
 grafo delle dipendenze punta tutto verso `@etl-js/contracts`, e dependency-cruiser lo verifica a ogni
 `npm run check`.
 
+**Un pacchetto e' un'unita' di distribuzione, un plugin un'unita' di configurazione: non coincidono.**
+`@etl-js/plugin-transforms` porta cinque plugin (`cast`, `filter`, `default`, `rename`, `validate`)
+perche' si installano sempre insieme; nelle Definition restano cinque nomi distinti e ognuno tiene la
+propria versione. Un pacchetto dichiara i suoi con `export const plugins: Plugin[]`.
+
 ## I pacchetti
 
 | Pacchetto | Cosa fa |
@@ -51,12 +56,8 @@ grafo delle dipendenze punta tutto verso `@etl-js/contracts`, e dependency-cruis
 | `@etl-js/cli` | `run`, `plugins`, `describe`, `validate`, `preview` |
 | `@etl-js/plugin-csv` | reader CSV in streaming su `csv-parse`; non apre file da se' (`ctx.openInput`) |
 | `@etl-js/plugin-postgres` | writer con `append`, `upsert`, `replace-by` |
+| `@etl-js/plugin-transforms` | la libreria standard: `cast`, `filter`, `default`, `rename`, `validate` |
 | `@etl-js/plugin-lookup` | collega le righe a dati gia' sul database, in batch |
-| `@etl-js/plugin-cast` | date, settimane ISO, decimali con la virgola, booleani |
-| `@etl-js/plugin-filter` | butta via intestazioni, totali, righe vuote |
-| `@etl-js/plugin-default` | riempie i campi assenti, marca la provenienza di ogni riga |
-| `@etl-js/plugin-rename` | dalle intestazioni del cliente ai nomi del gestionale |
-| `@etl-js/plugin-validate` | regole di merito con `severity` |
 
 ## Un cliente, un file
 

@@ -36,14 +36,21 @@ afterEach(() => {
 });
 
 describe("cli", () => {
-  test("plugins elenca i manifest dei plugin inclusi", async () => {
+  test("plugins elenca la libreria standard, non tutto lo scibile", async () => {
     const { code, out } = await cli("plugins");
     const manifests = JSON.parse(out) as { name: string; kind: string }[];
     expect(code).toBe(0);
     expect(manifests.map((m) => `${m.name}:${m.kind}`)).toEqual([
+      "cast:transformer",
       "csv:reader",
+      "default:transformer",
+      "filter:transformer",
       "postgres:writer",
+      "rename:transformer",
+      "validate:transformer",
     ]);
+    // `lookup` non c'e': non e' una dipendenza della CLI, arriva dal loader.
+    expect(manifests.some((m) => m.name === "lookup")).toBe(false);
   });
 
   test("describe stampa il JSON Schema della config", async () => {

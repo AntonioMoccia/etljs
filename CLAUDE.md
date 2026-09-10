@@ -45,11 +45,22 @@ packages/
   core/             @etl-js/core        registry, loader, pipeline, validate, describe, preview
   testing/          @etl-js/testing     harness per testare i plugin
   cli/              @etl-js/cli         usa core; nomina solo csv e postgres, il resto lo carica
-  plugin-csv/       reader
-  plugin-postgres/  writer: append, upsert, replace-by
-  plugin-lookup/    transformer (cardine): collega al gestionale, in batch
-  plugin-cast/ plugin-filter/ plugin-default/ plugin-rename/ plugin-validate/
+  plugin-csv/         reader
+  plugin-postgres/    writer: append, upsert, replace-by
+  plugin-transforms/  libreria standard: cast, filter, default, rename, validate
+  plugin-lookup/      transformer (cardine): collega al gestionale, in batch
 ```
+
+**Un pacchetto npm non e' un plugin.** E' un'unita' di distribuzione; il plugin e' un'unita' di
+configurazione. Un pacchetto ne dichiara uno con `export const plugin` o molti con
+`export const plugins: Plugin[]`, e il registry li indicizza per `manifest.name`. I cinque
+transformer di base stanno insieme perche' si installano insieme; ognuno tiene la **propria**
+`manifest.version`, cosi' modificarne uno non fa comparire `VERSION_DRIFT` sugli altri.
+
+Il prezzo di tenerli separati lo si e' visto: `configOf` era riscritto cinque volte e "campo vuoto"
+tre volte con due nomi diversi, gia' divergenti fra loro. Cio' che serve a piu' pacchetti sta in
+`contracts` (`isBlank`, `createRunCache`, `configInvalid`), perche' un plugin non puo' importarne
+un altro (I9).
 
 I transformer **non** sono dipendenze della CLI: vengono caricati per nome dal loader quando una
 Definition li cita. Se un giorno smettessero di funzionare cosi', il test

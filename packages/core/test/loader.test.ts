@@ -96,6 +96,85 @@ describe("loadPlugin", () => {
   });
 });
 
+describe("pacchetti con piu' plugin", () => {
+  test("un pacchetto puo' esportare piu' plugin, e il loader trova quello chiesto", async () => {
+    const npm = fakeNpm({
+      "@etl-js/plugin-transforms": {
+        plugins: [pluginNamed("cast"), pluginNamed("filter"), pluginNamed("rename")],
+      },
+    });
+    const plugin = await loadPlugin("filter", {
+      packages: { filter: "@etl-js/plugin-transforms" },
+      importModule: npm.importModule,
+    });
+    expect(plugin.manifest.name).toBe("filter");
+  });
+
+  test("caricare un plugin del pacchetto registra anche i suoi fratelli", async () => {
+    const npm = fakeNpm({
+      "@etl-js/plugin-transforms": {
+        plugins: [pluginNamed("cast"), pluginNamed("filter"), pluginNamed("rename")],
+      },
+    });
+    const registry = new Registry();
+    const loader = createLoader({
+      packages: {
+        cast: "@etl-js/plugin-transforms",
+        filter: "@etl-js/plugin-transforms",
+        rename: "@etl-js/plugin-transforms",
+      },
+      importModule: npm.importModule,
+      registry,
+    });
+
+    await loader("cast");
+    await loader("filter");
+
+    // Un solo import: il pacchetto e' arrivato tutto insieme la prima volta.
+    expect(npm.requested).toEqual(["@etl-js/plugin-transforms"]);
+    expect(registry.list().map((m) => m.name)).toEqual(["cast", "filter", "rename"]);
+  });
+
+  test("se il pacchetto non contiene il plugin chiesto, l'errore dice cosa contiene", async () => {
+    const npm = fakeNpm({
+      "@etl-js/plugin-transforms": { plugins: [pluginNamed("cast"), pluginNamed("filter")] },
+    });
+    await expect(
+      loadPlugin("lookup", {
+        packages: { lookup: "@etl-js/plugin-transforms" },
+        importModule: npm.importModule,
+      }),
+    ).rejects.toMatchObject({
+      code: "PLUGIN_NOT_FOUND",
+      context: { contiene: ["cast", "filter"] },
+    });
+  });
+
+  test("un pacchetto con un elenco vuoto e' un errore d'uso, non un pacchetto vuoto", async () => {
+    const npm = fakeNpm({ "@etl-js/plugin-transforms": { plugins: [] } });
+    await expect(
+      loadPlugin("cast", {
+        packages: { cast: "@etl-js/plugin-transforms" },
+        importModule: npm.importModule,
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_USAGE" });
+  });
+
+  test("un fratello con protocollo incompatibile fa fallire tutto il pacchetto", async () => {
+    const npm = fakeNpm({
+      "@etl-js/plugin-transforms": {
+        plugins: [pluginNamed("cast"), pluginNamed("filter", PROTOCOL_VERSION + 1)],
+      },
+    });
+    await expect(
+      loadPlugin("cast", {
+        packages: { cast: "@etl-js/plugin-transforms" },
+        importModule: npm.importModule,
+      }),
+    ).rejects.toMatchObject({ code: "PROTOCOL_MISMATCH" });
+  });
+});
+
 describe("createLoader", () => {
   test("carica una volta sola: il registry fa da cache", async () => {
     const npm = fakeNpm({ "@etl-js/plugin-csv": { plugin: pluginNamed("csv") } });

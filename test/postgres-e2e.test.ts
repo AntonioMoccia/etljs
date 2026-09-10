@@ -12,8 +12,8 @@ import {
   type HostCtx,
 } from "@etl-js/core";
 import csv from "@etl-js/plugin-csv";
-import cast from "@etl-js/plugin-cast";
 import postgres from "@etl-js/plugin-postgres";
+import { castPlugin } from "@etl-js/plugin-transforms";
 
 /**
  * I criteri della fase 7 contro un Postgres vero: ri-importare lo stesso piano
@@ -50,7 +50,7 @@ function ctx(): HostCtx {
 }
 
 function registry(): Registry {
-  return new Registry().register(csv).register(cast).register(postgres);
+  return new Registry().register(csv).register(castPlugin).register(postgres);
 }
 
 /** Un piano di consegna: ordine, quantita', data. */

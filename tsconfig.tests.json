@@ -15,11 +15,7 @@
       "@etl-js/testing": ["packages/testing/src/index.ts"],
       "@etl-js/plugin-csv": ["packages/plugin-csv/src/index.ts"],
       "@etl-js/plugin-lookup": ["packages/plugin-lookup/src/index.ts"],
-      "@etl-js/plugin-cast": ["packages/plugin-cast/src/index.ts"],
-      "@etl-js/plugin-filter": ["packages/plugin-filter/src/index.ts"],
-      "@etl-js/plugin-default": ["packages/plugin-default/src/index.ts"],
-      "@etl-js/plugin-validate": ["packages/plugin-validate/src/index.ts"],
-      "@etl-js/plugin-rename": ["packages/plugin-rename/src/index.ts"],
+      "@etl-js/plugin-transforms": ["packages/plugin-transforms/src/index.ts"],
       "@etl-js/plugin-postgres": ["packages/plugin-postgres/src/index.ts"]
     }
   },

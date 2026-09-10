@@ -1,8 +1,8 @@
 {
-  "name": "@etl-js/plugin-rename",
+  "name": "@etl-js/plugin-transforms",
   "version": "0.1.0",
   "type": "module",
-  "description": "Transformer rename",
+  "description": "I transformer di base: cast, filter, default, rename, validate",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

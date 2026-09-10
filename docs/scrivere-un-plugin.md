@@ -80,6 +80,18 @@ export default plugin;
 }
 ```
 
+### Un pacchetto con piu' plugin
+
+Se ne pubblichi diversi che si installano sempre insieme, un pacchetto solo basta e avanza:
+
+```ts
+export const plugins: Plugin[] = [castPlugin, filterPlugin, renamePlugin];
+```
+
+Il loader li registra tutti al primo import, e nelle Definition restano nomi distinti. Dai a ognuno
+la **sua** `manifest.version`, indipendente da quella del pacchetto: altrimenti modificarne uno fa
+comparire avvisi `VERSION_DRIFT` su tutti gli altri.
+
 Il nome del pacchetto segue la convenzione `@etl-js/plugin-<nome>` oppure `etl-js-plugin-<nome>`:
 e' cosi' che il loader lo trova a partire dal nome logico scritto nella Definition. Chi usa un altro
 nome lo dichiara con `createLoader({ packages: { maiuscolo: "@acme/qualunque-cosa" } })`.

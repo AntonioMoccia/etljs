@@ -43,3 +43,15 @@ export interface TransformResult {
   batch: Batch;
   failed: Failed[];
 }
+
+/**
+ * "Il campo non ha un valore": assente, nullo, o una stringa di soli spazi.
+ * Un numero zero e un booleano falso **non** sono vuoti.
+ *
+ * Sta qui perche' e' la stessa domanda in ogni plugin, e quando la si riscrive
+ * si finisce per rispondere in modo diverso (I9: i plugin non possono
+ * condividere codice se non passando da contracts).
+ */
+export function isBlank(value: unknown): boolean {
+  return value === null || value === undefined || (typeof value === "string" && value.trim() === "");
+}

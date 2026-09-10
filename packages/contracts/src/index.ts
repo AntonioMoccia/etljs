@@ -9,3 +9,4 @@ export * from "./sql.js";
 export * from "./ctx.js";
 export * from "./plugins.js";
 export * from "./definition.js";
+export * from "./run-cache.js";
