@@ -1,0 +1,70 @@
+import type { Row } from "./rows.js";
+
+export type LogLevel = "debug" | "info" | "warn" | "error";
+
+/** Log strutturato: niente console.log nei plugin, l'host decide dove finisce. */
+export interface Logger {
+  debug(message: string, fields?: Record<string, unknown>): void;
+  info(message: string, fields?: Record<string, unknown>): void;
+  warn(message: string, fields?: Record<string, unknown>): void;
+  error(message: string, fields?: Record<string, unknown>): void;
+  /** Logger figlio con campi ereditati (es. { plugin: "lookup" }). */
+  child(fields: Record<string, unknown>): Logger;
+}
+
+/**
+ * Accesso in sola lettura a un database, gia' connesso dal core (I6).
+ * L'unica API e' batch e parametrizzata: non esiste un metodo "per riga" (I5, I7).
+ */
+export interface ReadOnlyDb {
+  query<T extends Row = Row>(sql: string, params?: readonly unknown[]): Promise<T[]>;
+}
+
+/**
+ * Transazione in scrittura, aperta dal core e consegnata al writer.
+ * Il writer non conosce credenziali ne' pool: riceve una transazione gia'
+ * iniziata e decide solo se chiuderla con commit o rollback.
+ */
+export interface WriteTransaction extends ReadOnlyDb {
+  /** DDL/DML parametrizzato; restituisce il numero di righe toccate. */
+  exec(sql: string, params?: readonly unknown[]): Promise<number>;
+  /**
+   * Caricamento massivo di righe posizionali nelle colonne indicate.
+   * Il driver sceglie come farlo (COPY su Postgres); il plugin non scrive SQL
+   * di caricamento e quindi non puo' sbagliarne l'escaping.
+   */
+  bulkLoad(
+    table: string,
+    columns: readonly string[],
+    rows: AsyncIterable<readonly unknown[]>,
+  ): Promise<number>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
+}
+
+/** Contesto di esecuzione consegnato a ogni plugin dal core. */
+export interface Ctx {
+  /**
+   * Identificativo del run in corso. Sta qui e non nella config perche' e' il
+   * reader a costruire i Batch, e ogni Batch deve poter dichiarare da quale
+   * run proviene (`Batch.meta.runId`).
+   */
+  runId: string;
+  /** Connessione in sola lettura al database logico `name` (I4, I6). */
+  db(name: string): ReadOnlyDb;
+  /** Risolve un riferimento a un segreto; il plugin non vede mai la credenziale grezza. */
+  secretRef(ref: string): string;
+  log: Logger;
+  /** Annullamento cooperativo del run. */
+  signal: AbortSignal;
+}
+
+/**
+ * Contesto arricchito che il core passa ESCLUSIVAMENTE al writer della
+ * destinazione. Resta un `Ctx` a tutti gli effetti: reader e transformer
+ * continuano a vedere solo la sola lettura (I4).
+ */
+export interface WriterCtx extends Ctx {
+  /** Apre (BEGIN) una transazione sul database logico `name`. */
+  dbWrite(name: string): Promise<WriteTransaction>;
+}

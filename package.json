@@ -1,0 +1,27 @@
+{
+  "name": "etl-js",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Motore di importazione dati a plugin: libreria senza stato",
+  "engines": {
+    "node": ">=18.18"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "typecheck:tests": "tsc -p tsconfig.tests.json",
+    "test": "vitest run",
+    "check:boundaries": "depcruise packages --config .dependency-cruiser.cjs",
+    "check": "npm run build && npm run typecheck:tests && npm test && npm run check:boundaries"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "dependency-cruiser": "^16.10.0",
+    "typescript": "^5.6.3",
+    "vitest": "^3.2.7"
+  }
+}

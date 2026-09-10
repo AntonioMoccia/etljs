@@ -1,0 +1,21 @@
+{
+  "client": "acme",
+  "source": {
+    "type": "csv",
+    "config": {
+      "path": "examples/acme.csv",
+      "delimiter": ";",
+      "encoding": "latin1",
+      "skipRows": 3
+    }
+  },
+  "transform": [],
+  "destination": {
+    "type": "postgres",
+    "config": {
+      "db": "gestionale",
+      "table": "landing_piani_consegna"
+    }
+  },
+  "policy": { "rejectFile": true }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@etl-js/core",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Registry, loader, pipeline: non conosce alcun plugin concreto",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18.18"
+  },
+  "dependencies": {
+    "@etl-js/contracts": "^0.1.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  },
+  "optionalDependencies": {
+    "pg": "^8.13.1",
+    "pg-copy-streams": "^6.0.6"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.10"
+  }
+}

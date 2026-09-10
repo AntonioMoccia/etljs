@@ -1,0 +1,112 @@
+{
+  "client": "acme",
+  "source": {
+    "type": "csv",
+    "config": {
+      "path": "examples/acme.csv",
+      "delimiter": ";",
+      "encoding": "latin1",
+      "skipRows": 3
+    }
+  },
+  "transform": [
+    {
+      "type": "filter",
+      "config": {
+        "drop": [
+          {
+            "field": "Nr Ordine",
+            "empty": true
+          }
+        ]
+      }
+    },
+    {
+      "type": "rename",
+      "config": {
+        "map": {
+          "Nr Ordine": "ordine_cliente",
+          "Data": "data_consegna",
+          "Quantita": "quantita"
+        }
+      }
+    },
+    {
+      "type": "cast",
+      "config": {
+        "data_consegna": {
+          "date": "dd/MM/yyyy"
+        },
+        "quantita": {
+          "number": {
+            "decimal": ",",
+            "thousands": "."
+          }
+        }
+      }
+    },
+    {
+      "type": "lookup",
+      "config": {
+        "db": "gestionale",
+        "table": "ordini",
+        "on": [
+          "ordine_cliente"
+        ],
+        "select": "ordine_id",
+        "onMissing": "reject"
+      }
+    },
+    {
+      "type": "validate",
+      "config": {
+        "rules": [
+          {
+            "field": "quantita",
+            "min": 1,
+            "severity": "reject"
+          },
+          {
+            "field": "data_consegna",
+            "notBefore": "today",
+            "severity": "warn"
+          }
+        ]
+      }
+    },
+    {
+      "type": "default",
+      "config": {
+        "values": {
+          "run_id": {
+            "fromMeta": "runId",
+            "when": "always"
+          },
+          "file_origine": {
+            "fromMeta": "source",
+            "when": "always"
+          },
+          "riga_origine": {
+            "fromMeta": "offset",
+            "when": "always"
+          }
+        }
+      }
+    }
+  ],
+  "destination": {
+    "type": "postgres",
+    "config": {
+      "db": "gestionale",
+      "table": "landing_piani_consegna",
+      "strategy": "replace-by",
+      "replaceKey": [
+        "ordine_id"
+      ]
+    }
+  },
+  "policy": {
+    "maxFailedRatio": 0.2,
+    "rejectFile": true
+  }
+}

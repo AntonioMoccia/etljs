@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@etl-js/contracts": ["packages/contracts/src/index.ts"],
+      "@etl-js/core": ["packages/core/src/index.ts"],
+      "@etl-js/cli": ["packages/cli/src/index.ts"],
+      "@etl-js/testing": ["packages/testing/src/index.ts"],
+      "@etl-js/plugin-csv": ["packages/plugin-csv/src/index.ts"],
+      "@etl-js/plugin-lookup": ["packages/plugin-lookup/src/index.ts"],
+      "@etl-js/plugin-cast": ["packages/plugin-cast/src/index.ts"],
+      "@etl-js/plugin-filter": ["packages/plugin-filter/src/index.ts"],
+      "@etl-js/plugin-default": ["packages/plugin-default/src/index.ts"],
+      "@etl-js/plugin-validate": ["packages/plugin-validate/src/index.ts"],
+      "@etl-js/plugin-rename": ["packages/plugin-rename/src/index.ts"],
+      "@etl-js/plugin-postgres": ["packages/plugin-postgres/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src/**/*.ts", "packages/*/test/**/*.ts", "test/**/*.ts", "vitest.config.ts"]
+}

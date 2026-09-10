@@ -1,0 +1,41 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "packages/contracts"
+    },
+    {
+      "path": "packages/core"
+    },
+    {
+      "path": "packages/testing"
+    },
+    {
+      "path": "packages/plugin-csv"
+    },
+    {
+      "path": "packages/plugin-postgres"
+    },
+    {
+      "path": "packages/plugin-lookup"
+    },
+    {
+      "path": "packages/plugin-cast"
+    },
+    {
+      "path": "packages/plugin-filter"
+    },
+    {
+      "path": "packages/plugin-default"
+    },
+    {
+      "path": "packages/plugin-validate"
+    },
+    {
+      "path": "packages/plugin-rename"
+    },
+    {
+      "path": "packages/cli"
+    }
+  ]
+}
