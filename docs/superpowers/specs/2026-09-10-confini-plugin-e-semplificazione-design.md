@@ -296,13 +296,99 @@ il motore le decisioni che I6 tiene fuori.
 
 Beneficio collaterale: la CLI smette di avere due costruzioni del contesto che possono divergere.
 
+## D11 - Un plugin e' un oggetto, non un pacchetto: tre modi di fornirlo
+
+`Plugin` e' `{ manifest, impl }`. La sensazione che "un plugin = un pacchetto npm con package.json"
+nasce solo dal fatto che oggi l'unico modo di caricarne uno per nome passa dal loader npm. Tolto il
+loader dal motore (D4), la convenzione npm diventa **una strategia di caricamento fra le tre**, non
+una regola del sistema:
+
+| Modo | Cerimonia | Per chi |
+|---|---|---|
+| **Registrazione diretta**: l'ospite importa l'oggetto e chiama `registry.register(plugin)` | zero, funziona gia' oggi | un'applicazione che incorpora etl-js e ha i propri transformer di dominio |
+| **Da una cartella**: il loader importa i `.js` da una cartella indicata dall'ospite | un file, nessun package.json | il plugin custom di un cliente; la GUI che li fa "installare" |
+| **Da npm**: come oggi | package.json, versione, pubblicazione | plugin destinati a essere condivisi e versionati |
+
+### D11.1 - Il caricamento da cartella
+
+In `@etl-js/loader`: `createDirectoryLoader({ dir })` restituisce un `PluginResolver` che risolve un
+nome logico in `<dir>/<nome>.js` (o `<dir>/<nome>/index.js`), piu' `scanDirectory(dir)` per
+elencare cio' che c'e' - la GUI ne ha bisogno per mostrare i plugin disponibili.
+
+**Il nome arriva da una Definition, quindi va trattato come ostile**: si rifiuta qualunque nome che
+contenga `/`, `\` o `..`, e il percorso risolto deve restare dentro `dir`. E' la stessa classe di
+bug da cui `createFileInput({ baseDir })` gia' difende, e la stessa difesa.
+
+### D11.2 - Un plugin custom non ha dipendenze
+
+Vale la pena scriverlo in `docs/scrivere-un-plugin.md` con l'esempio completo, perche' e' la prova
+che "sempre estendibile" (D0) non e' uno slogan: **il core valida gia' la config per conto del
+plugin.** Se il manifest porta un JSON Schema, `validate()` lo compila con Ajv e controlla la
+Definition prima che il run parta. Zod, nei plugin standard, serve a *derivare* quello schema, non
+e' un obbligo.
+
+Un transformer custom completo e' quindi un file, senza dipendenze e senza build: `manifest` con un
+JSON Schema scritto a mano, e un `impl.open` che restituisce un oggetto con `transform`. Una
+ventina di righe.
+
+### D11.3 - Caricare un file e' eseguire codice
+
+Da scrivere una volta in `docs/` e non ripetere: caricare un plugin da una cartella significa
+eseguire codice arbitrario nel processo dell'ospite. In un'installazione interna e' normale
+amministrazione; in un SaaS decide l'ospite se un tenant possa caricare codice o se i plugin custom
+li installi solo un amministratore. E' la decisione che D4 ha gia' messo nelle mani giuste: qui si
+documenta, non si aggiunge nessun meccanismo.
+
+## D12 - etl-js non ha file di configurazione
+
+Domanda inevitabile quando si installa da npm: "dove metto i file di configurazione?". Risposta:
+**non ce ne sono.** Niente `.etlrc`, niente da copiare dopo l'install, niente da leggere da
+`node_modules`.
+
+- La **Definition** e' un argomento di `run(definition, ctx)`: un **oggetto**, non un percorso. E'
+  un dato dell'**applicazione ospite** e vive dove l'ospite tiene i suoi dati - una riga nel
+  database della GUI, un file nel repo dell'app, un oggetto su object storage. Solo la CLI la legge
+  da un file, perche' una CLI deve pur prendere un argomento.
+- Le **credenziali** non le vede mai (I6): le mette l'ospite nel `Ctx`.
+- L'**elenco dei plugin** e' la `Registry` che costruisce l'ospite (D4, D11).
+
+E' cio' che "libreria senza stato" significa gia' in `CLAUDE.md`, detto in modo utilizzabile.
+
+**Corollario da scrivere accanto a I8:** le Definition sono la cosa che diventa venti file quando i
+clienti sono venti. Stanno nel progetto ospite, **mai** dentro il pacchetto. `examples/` resta
+quello che e' - esempi - e non deve mai diventare la casa delle configurazioni vere.
+
+## D13 - Un meta-pacchetto `etl-js` come porta d'ingresso
+
+Oggi incorporare etl-js significa installare `core`, `plugin-csv`, `plugin-postgres`,
+`plugin-transforms`, `plugin-lookup` e sapere come assemblarli. La modularita' e' giusta, ma non
+deve essere **l'unico** modo di entrare.
+
+Nasce `packages/etl-js/`: dipende dal core e dai plugin standard, ri-esporta `run`, `preview`,
+`validate`, `createHostCtx` e offre una `Registry` gia' popolata. `npm i etl-js`, un import, e si
+parte. I pacchetti granulari restano per chi vuole solo il reader CSV.
+
+Diventa anche **l'unico punto del progetto in cui dei plugin concreti sono nominati** - ruolo che
+oggi ha `packages/cli/src/builtins.ts`, che infatti sparisce: la CLI dipendera' dal meta-pacchetto.
+Un posto solo invece di due che possono divergere.
+
+Due dettagli pratici, non rimandabili:
+
+- il pacchetto **privato di radice si chiama gia' `etl-js`**: va rinominato (per esempio
+  `etl-js-monorepo`, non viene mai pubblicato) perche' il nome resti libero per il meta-pacchetto;
+- la disponibilita' del nome `etl-js` su npm va verificata prima di impegnarcisi.
+
+Le regole di dependency-cruiser vanno estese: `core` non deve dipendere ne' da `loader` ne' da
+`etl-js`, esattamente come gia' non dipende dai plugin e dalla CLI.
+
 ## Cosa non cambia
 
 - I nove invarianti, tutti. D4 e D6 rafforzano I6; D5 non tocca I4 (la sessione riceve un `Ctx` in
   sola lettura come oggi). D9 ne **aggiunge** uno, I10.
 - I sette pacchetti esistenti: sono unita' di distribuzione, e chi vuole `plugin-csv` non deve
-  tirarsi dietro Postgres. Nessuno viene fuso; D4 ne aggiunge un ottavo (`loader`), e lo aggiunge
-  proprio per tenere separato cio' che oggi e' mescolato.
+  tirarsi dietro Postgres. **Nessuno viene fuso.** Se ne aggiungono due, e per motivi opposti fra
+  loro: `loader` (D4) per tenere **fuori** dal motore il codice che carica codice, `etl-js` (D13)
+  per dare una porta d'ingresso a chi non vuole assemblare niente.
 - `contracts` a zero dipendenze e le regole di dependency-cruiser.
 - `EtlError` e la classificazione degli errori.
 - La forma di un run: una sorgente, N transformer, una destinazione.
@@ -313,8 +399,9 @@ Beneficio collaterale: la CLI smette di avere due costruzioni del contesto che p
 |---|---|
 | `contracts` | `Transformer`/`TransformSession` (D5), `PROTOCOL_VERSION` 2, via `run-cache.ts`, via `secretRef`, via `capabilities`/`category`, via `PluginModule` |
 | `core` | `pipeline.ts` apre e usa le sessioni; `context.ts` senza `secretRef`; `loader.ts` esce; nasce `createHostCtx` (D10) |
-| `loader` (nuovo) | accoglie `loadPlugin`, `createLoader`, i prefissi npm e `PluginModule` |
-| `cli` | usa `@etl-js/loader`; `builtins.ts` e la costruzione del `Ctx` si adeguano |
+| `loader` (nuovo) | accoglie `loadPlugin`, `createLoader`, i prefissi npm e `PluginModule`; nasce `createDirectoryLoader` (D11.1) |
+| `etl-js` (nuovo) | meta-pacchetto: core + plugin standard, registry pronta, ri-esporta l'API (D13) |
+| `cli` | dipende dal meta-pacchetto; `builtins.ts` sparisce; una sola costruzione del `Ctx` |
 | `plugin-transforms` | 5 transformer a sessione, `configReader` dimezzato, `seenByRun` sparisce; nasce `dedup` |
 | `plugin-lookup` | a sessione: spariscono `cachesByRun`, `configId`, `parsedConfigs` |
 | `plugin-csv`, `plugin-postgres` | solo `protocol: 2` nel manifest |
@@ -336,8 +423,12 @@ repo. E' esattamente il motivo per cui si fa adesso.
    che impedisce a `core` di tornare a dipenderne.
 4. **D6 + D7** - `secretRef`, `capabilities`, `category` via.
 5. **D10** - `createHostCtx`, e la CLI che smette di costruire il contesto due volte.
-6. **D1 + D3 + D8 + D9/I10** - regola d'ammissione, scelta su `preview`, invariante I10 e la nota
-   sui `GRANT` in `CLAUDE.md` e `docs/`.
+6. **D13** - il meta-pacchetto `etl-js`, la rinomina del pacchetto di radice, `builtins.ts` che
+   sparisce, le regole dependency-cruiser estese.
+7. **D11.1** - `createDirectoryLoader` con la difesa dai nomi ostili.
+8. **D1 + D3 + D8 + D9/I10 + D11.2/11.3 + D12** - tutta la documentazione: regola d'ammissione,
+   scelta su `preview`, invariante I10, i `GRANT`, l'esempio di plugin custom senza dipendenze,
+   e dove vivono le Definition.
 
 Ogni passo si chiude con `npm run check` verde: e' il criterio di done gia' in uso nel progetto.
 
