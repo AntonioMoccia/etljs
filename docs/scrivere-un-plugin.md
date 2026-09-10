@@ -3,6 +3,10 @@
 Un plugin e' un pacchetto npm che esporta un oggetto `plugin`. Il core non lo conosce e non lo
 nominera' mai: lo carica per nome quando una Definition lo cita (I2).
 
+Prima di scriverne uno, controlla se serve davvero: [i plugin esistenti](plugin.md) coprono
+conversioni, filtri, rinomine, controlli e lookup, e sono parametrizzati. Se ti serve un
+`if (cliente === "acme")`, manca un parametro a un plugin che c'e' gia'.
+
 ## Le tre forme
 
 | Tipo | Cosa fa | Firma |
@@ -201,6 +205,50 @@ esattamente cosa aggiungere, invece di un `undefined` silenzioso.
 5. **Non nomina nessun cliente.** Se ti serve un `if (cliente === "acme")`, manca un parametro alla
    config (I8).
 6. **Non importa `@etl-js/core` ne' un altro plugin.** `npm run check:boundaries` te lo impedisce (I9).
+
+## Un reader o un writer
+
+Le stesse regole, contratti diversi.
+
+Un **reader** produce lotti e non apre nulla:
+
+```ts
+const impl: Reader = {
+  async *read(rawConfig, ctx) {
+    const config = parseConfig(rawConfig);
+    const bytes = await ctx.openInput(config.input);   // mai node:fs
+    let rows = [], offset = 0;
+    for await (const riga of leggi(bytes)) {
+      if (ctx.signal.aborted) return;
+      rows.push(riga);
+      if (rows.length >= config.batchSize) {
+        yield { rows, meta: { runId: ctx.runId, source: config.input, offset } };
+        offset += rows.length;
+        rows = [];
+      }
+    }
+    if (rows.length) yield { rows, meta: { runId: ctx.runId, source: config.input, offset } };
+  },
+};
+```
+
+Un **writer** apre una sessione e la chiude con commit o rollback:
+
+```ts
+const impl: Writer = {
+  async open(rawConfig, ctx) {
+    const config = parseConfig(rawConfig);
+    const tx = await (ctx as WriterCtx).dbWrite(config.db);   // il core l'ha gia' aperta
+    return {
+      async write(batch) { await tx.bulkLoad(config.table, colonne, righe(batch)); },
+      async close(commit) { commit ? await tx.commit() : await tx.rollback(); },
+    };
+  },
+};
+```
+
+Un writer riceve un `Ctx` arricchito con `dbWrite`; reader e transformer no, e non e' una
+convenzione: su quell'oggetto il metodo non esiste.
 
 ## Pubblicarlo e usarlo
 

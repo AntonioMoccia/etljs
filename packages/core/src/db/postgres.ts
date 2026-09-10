@@ -2,7 +2,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import {
   ErrorCodes,
-  IngestError,
+  EtlError,
   escapeIdentifier,
   escapeQualifiedName,
   type ReadOnlyDb,
@@ -46,7 +46,7 @@ async function loadPg(): Promise<PgModule> {
     const mod = await import("pg");
     return ((mod as unknown as { default?: PgModule }).default ?? mod) as PgModule;
   } catch (error) {
-    throw new IngestError(
+    throw new EtlError(
       "Per usare Postgres serve la dipendenza opzionale 'pg': npm i pg pg-copy-streams",
       { code: ErrorCodes.DB_ERROR, cause: error },
     );
@@ -63,9 +63,9 @@ const RETRYABLE_SQLSTATE = new Set([
   "08003", // connection_does_not_exist
 ]);
 
-function asDbError(error: unknown, context: Record<string, unknown>): IngestError {
+function asDbError(error: unknown, context: Record<string, unknown>): EtlError {
   const code = (error as { code?: string } | undefined)?.code;
-  return IngestError.wrap(error, {
+  return EtlError.wrap(error, {
     code: ErrorCodes.DB_ERROR,
     retryable: code !== undefined && RETRYABLE_SQLSTATE.has(code),
     context: { ...context, sqlstate: code },
@@ -97,7 +97,7 @@ export async function createPostgresProvider(
   const configFor = (name: string): PostgresDbConfig => {
     const config = databases[name];
     if (!config) {
-      throw new IngestError(`Database logico "${name}" non configurato`, {
+      throw new EtlError(`Database logico "${name}" non configurato`, {
         code: ErrorCodes.INVALID_USAGE,
         context: { name, available: Object.keys(databases) },
       });
@@ -197,7 +197,7 @@ export async function createPostgresProvider(
 
         async bulkLoad(table, columns, rows): Promise<number> {
           if (columns.length === 0) {
-            throw new IngestError("bulkLoad senza colonne", {
+            throw new EtlError("bulkLoad senza colonne", {
               code: ErrorCodes.INVALID_USAGE,
               context: { table },
             });

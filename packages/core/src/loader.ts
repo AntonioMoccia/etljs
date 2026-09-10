@@ -1,6 +1,6 @@
 import {
   ErrorCodes,
-  IngestError,
+  EtlError,
   PROTOCOL_VERSION,
   type Plugin,
   type PluginModule,
@@ -55,7 +55,7 @@ function pluginsFromModule(specifier: string, name: string, loaded: unknown): Pl
 
   if (Array.isArray(bundle)) {
     if (bundle.length === 0 || !bundle.every(isPlugin)) {
-      throw new IngestError(
+      throw new EtlError(
         `Il pacchetto "${specifier}" esporta "plugins" ma non e' un elenco di plugin validi`,
         { code: ErrorCodes.INVALID_USAGE, context: { specifier, requested: name } },
       );
@@ -65,7 +65,7 @@ function pluginsFromModule(specifier: string, name: string, loaded: unknown): Pl
 
   const single = module?.plugin ?? module?.default;
   if (!isPlugin(single)) {
-    throw new IngestError(
+    throw new EtlError(
       `Il pacchetto "${specifier}" non espone un plugin: serve "export const plugin: Plugin" (o "plugins", o un default export)`,
       {
         code: ErrorCodes.INVALID_USAGE,
@@ -115,7 +115,7 @@ export async function loadPluginPackage(
         lastNotFound = error;
         continue;
       }
-      throw new IngestError(
+      throw new EtlError(
         `Il pacchetto "${specifier}" e' fallito al caricamento`,
         { code: ErrorCodes.INVALID_USAGE, context: { specifier, requested: name }, cause: error },
       );
@@ -132,7 +132,7 @@ export async function loadPluginPackage(
       // Un pacchetto singolo che dichiara un altro nome e' un errore d'uso;
       // un pacchetto che ne contiene molti semplicemente non ha quello chiesto.
       if (found.length === 1) {
-        throw new IngestError(
+        throw new EtlError(
           `Il pacchetto "${specifier}" dichiara il plugin "${contiene[0] ?? ""}", ma e' stato chiesto "${name}"`,
           {
             code: ErrorCodes.INVALID_USAGE,
@@ -140,7 +140,7 @@ export async function loadPluginPackage(
           },
         );
       }
-      throw new IngestError(
+      throw new EtlError(
         `Il pacchetto "${specifier}" non contiene il plugin "${name}"`,
         { code: ErrorCodes.PLUGIN_NOT_FOUND, context: { specifier, requested: name, contiene } },
       );
@@ -148,7 +148,7 @@ export async function loadPluginPackage(
     return { plugin: wanted, siblings: found };
   }
 
-  throw new IngestError(
+  throw new EtlError(
     `Nessun pacchetto trovato per il plugin "${name}". Prova: npm i ${tried[0] ?? name}`,
     {
       code: ErrorCodes.PLUGIN_NOT_FOUND,

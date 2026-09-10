@@ -1,6 +1,6 @@
 import { createReadStream } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import { ErrorCodes, IngestError, type ByteStream } from "@etl-js/contracts";
+import { ErrorCodes, EtlError, type ByteStream } from "@etl-js/contracts";
 
 /** Come il core apre una sorgente: e' cio' che finisce in `ctx.openInput`. */
 export type InputResolver = (ref: string) => Promise<ByteStream>;
@@ -24,7 +24,7 @@ export function createFileInput(options: FileInputOptions = {}): InputResolver {
 
   return async (ref: string): Promise<ByteStream> => {
     if (typeof ref !== "string" || ref.trim() === "") {
-      throw new IngestError("Riferimento alla sorgente vuoto", {
+      throw new EtlError("Riferimento alla sorgente vuoto", {
         code: ErrorCodes.INVALID_USAGE,
         context: { ref },
       });
@@ -35,7 +35,7 @@ export function createFileInput(options: FileInputOptions = {}): InputResolver {
     if (base) {
       const inside = relative(base, path);
       if (inside === "" || inside.startsWith(`..${sep}`) || inside === ".." || isAbsolute(inside)) {
-        throw new IngestError(`La sorgente "${ref}" esce dalla cartella consentita`, {
+        throw new EtlError(`La sorgente "${ref}" esce dalla cartella consentita`, {
           code: ErrorCodes.INVALID_USAGE,
           context: { ref, baseDir: base },
         });
@@ -49,7 +49,7 @@ export function createFileInput(options: FileInputOptions = {}): InputResolver {
       stream.once("open", () => accept());
       stream.once("error", (error) =>
         fail(
-          new IngestError(`Impossibile leggere la sorgente "${ref}"`, {
+          new EtlError(`Impossibile leggere la sorgente "${ref}"`, {
             code: ErrorCodes.READ_FAILED,
             retryable: true,
             context: { ref, path },
@@ -68,7 +68,7 @@ export function createMemoryInput(sources: Record<string, string | Uint8Array>):
   return async (ref: string): Promise<ByteStream> => {
     const content = sources[ref];
     if (content === undefined) {
-      throw new IngestError(`Sorgente "${ref}" non disponibile`, {
+      throw new EtlError(`Sorgente "${ref}" non disponibile`, {
         code: ErrorCodes.READ_FAILED,
         context: { ref, available: Object.keys(sources) },
       });

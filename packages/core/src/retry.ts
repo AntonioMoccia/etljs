@@ -1,4 +1,4 @@
-import { ErrorCodes, IngestError } from "@etl-js/contracts";
+import { ErrorCodes, EtlError } from "@etl-js/contracts";
 
 export interface RetryOptions {
   /** Numero massimo di tentativi, il primo compreso. */
@@ -44,7 +44,7 @@ export async function withRetry<T>(
       return await operation();
     } catch (error) {
       lastError = error;
-      const retryable = IngestError.is(error) && error.retryable;
+      const retryable = EtlError.is(error) && error.retryable;
       const lastAttempt = attempt === attempts;
       if (!retryable || lastAttempt || options.signal?.aborted) break;
 
@@ -53,6 +53,6 @@ export async function withRetry<T>(
     }
   }
 
-  if (IngestError.is(lastError)) throw lastError.withContext({ attempts });
-  throw IngestError.wrap(lastError, { code: ErrorCodes.DB_ERROR, context: { attempts } });
+  if (EtlError.is(lastError)) throw lastError.withContext({ attempts });
+  throw EtlError.wrap(lastError, { code: ErrorCodes.DB_ERROR, context: { attempts } });
 }

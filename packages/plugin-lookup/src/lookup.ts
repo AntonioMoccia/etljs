@@ -1,6 +1,6 @@
 import {
   ErrorCodes,
-  IngestError,
+  EtlError,
   createRunCache,
   escapeIdentifier,
   escapeQualifiedName,
@@ -80,7 +80,7 @@ function buildFilter(
       continue;
     }
     if (condition.value === undefined) {
-      throw new IngestError(
+      throw new EtlError(
         `Il filtro su "${condition.column}" con operatore "${condition.op}" richiede un valore`,
         { code: ErrorCodes.CONFIG_INVALID, context: { filter: condition } },
       );

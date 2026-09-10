@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import {
   ErrorCodes,
-  IngestError,
+  EtlError,
   type Definition,
   type Manifest,
   type RunResult,
@@ -50,7 +50,7 @@ async function loadDefinition(path: string): Promise<Definition> {
   try {
     text = await readFile(path, "utf8");
   } catch (error) {
-    throw new IngestError(`Impossibile leggere la Definition ${path}`, {
+    throw new EtlError(`Impossibile leggere la Definition ${path}`, {
       code: ErrorCodes.SOURCE_UNREADABLE,
       context: { path },
       cause: error,
@@ -59,7 +59,7 @@ async function loadDefinition(path: string): Promise<Definition> {
   try {
     return JSON.parse(text) as Definition;
   } catch (error) {
-    throw new IngestError(`La Definition ${path} non e' JSON valido`, {
+    throw new EtlError(`La Definition ${path} non e' JSON valido`, {
       code: ErrorCodes.CONFIG_INVALID,
       context: { path },
       cause: error,
@@ -71,7 +71,7 @@ async function loadDefinition(path: string): Promise<Definition> {
 function parseDbOption(entry: string): [string, string] {
   const separator = entry.indexOf("=");
   if (separator <= 0) {
-    throw new IngestError(`--db vuole la forma nome=url, ricevuto "${entry}"`, {
+    throw new EtlError(`--db vuole la forma nome=url, ricevuto "${entry}"`, {
       code: ErrorCodes.INVALID_USAGE,
     });
   }
@@ -81,7 +81,7 @@ function parseDbOption(entry: string): [string, string] {
   const variable = value.slice("env:".length);
   const fromEnv = process.env[variable];
   if (!fromEnv) {
-    throw new IngestError(`La variabile d'ambiente ${variable} non e' impostata`, {
+    throw new EtlError(`La variabile d'ambiente ${variable} non e' impostata`, {
       code: ErrorCodes.INVALID_USAGE,
       context: { db: name, variable },
     });
@@ -133,7 +133,7 @@ async function registryFor(definition: Definition): Promise<Registry> {
     } catch (error) {
       // "non installato" lo racconta validate() indicando il punto esatto;
       // un protocollo incompatibile o un plugin rotto no, e va fatto vedere.
-      if (IngestError.is(error) && error.code === ErrorCodes.PLUGIN_NOT_FOUND) continue;
+      if (EtlError.is(error) && error.code === ErrorCodes.PLUGIN_NOT_FOUND) continue;
       throw error;
     }
   }
@@ -247,7 +247,7 @@ export async function main(argv: string[]): Promise<number> {
     openInput,
     db: (name) => {
       if (!provider) {
-        throw new IngestError(
+        throw new EtlError(
           `Serve una connessione al database "${name}": passala con --db ${name}=<url>`,
           { code: ErrorCodes.INVALID_USAGE, context: { db: name } },
         );
@@ -257,7 +257,7 @@ export async function main(argv: string[]): Promise<number> {
     secretRef: (ref) => {
       const value = process.env[ref];
       if (!value) {
-        throw new IngestError(`Segreto "${ref}" non presente nell'ambiente`, {
+        throw new EtlError(`Segreto "${ref}" non presente nell'ambiente`, {
           code: ErrorCodes.INVALID_USAGE,
           context: { ref },
         });
@@ -273,7 +273,7 @@ export async function main(argv: string[]): Promise<number> {
   const registry = await registryFor(definition);
   const limit = values.limit === undefined ? undefined : Number(values.limit);
   if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) {
-    throw new IngestError(`--limit vuole un intero positivo, ricevuto "${values.limit}"`, {
+    throw new EtlError(`--limit vuole un intero positivo, ricevuto "${values.limit}"`, {
       code: ErrorCodes.INVALID_USAGE,
     });
   }
@@ -338,7 +338,7 @@ async function previewCommand(args: string[]): Promise<number> {
 
   const rows = Number(values.n);
   if (!Number.isInteger(rows) || rows <= 0) {
-    throw new IngestError(`-n vuole un intero positivo, ricevuto "${values.n}"`, {
+    throw new EtlError(`-n vuole un intero positivo, ricevuto "${values.n}"`, {
       code: ErrorCodes.INVALID_USAGE,
     });
   }
@@ -352,7 +352,7 @@ async function previewCommand(args: string[]): Promise<number> {
     {
       openInput,
       db: (name) => {
-        throw new IngestError(
+        throw new EtlError(
           `L'anteprima richiede il database "${name}": usa "run --dry-run --db ${name}=<url>"`,
           { code: ErrorCodes.INVALID_USAGE, context: { db: name } },
         );

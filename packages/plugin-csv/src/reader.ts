@@ -3,7 +3,7 @@ import { TextDecoder } from "node:util";
 import { parse, type Parser } from "csv-parse";
 import {
   ErrorCodes,
-  IngestError,
+  EtlError,
   type Batch,
   type ByteStream,
   type Ctx,
@@ -47,7 +47,7 @@ async function* decode(
       if (text.length > 0) yield text;
     }
   } catch (error) {
-    throw new IngestError(`Lettura interrotta su "${ref}"`, {
+    throw new EtlError(`Lettura interrotta su "${ref}"`, {
       code: ErrorCodes.READ_FAILED,
       retryable: true,
       context: { input: ref },
@@ -130,8 +130,8 @@ export const csvReader: Reader = {
       }
       if (rows.length > 0) yield flush();
     } catch (error) {
-      if (IngestError.is(error)) throw error;
-      throw new IngestError(`CSV illeggibile: "${config.input}"`, {
+      if (EtlError.is(error)) throw error;
+      throw new EtlError(`CSV illeggibile: "${config.input}"`, {
         code: ErrorCodes.READ_FAILED,
         context: { input: config.input, delimiter: config.delimiter },
         cause: error,

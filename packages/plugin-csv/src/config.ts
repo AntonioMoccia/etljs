@@ -39,7 +39,7 @@ export const csvConfigSchema = z
 
 export type CsvConfig = z.infer<typeof csvConfigSchema>;
 
-/** Valida la config grezza trasformando gli errori di Zod in un IngestError leggibile. */
+/** Valida la config grezza trasformando gli errori di Zod in un EtlError leggibile. */
 export function parseCsvConfig(config: unknown): CsvConfig {
   const result = csvConfigSchema.safeParse(config);
   if (result.success) return result.data;

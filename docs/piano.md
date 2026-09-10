@@ -11,7 +11,7 @@ Ogni fase e' completa quando il suo criterio e' soddisfatto **e** `npm run check
 | 3 | `lookup`: query batch `= ANY($1)`, cache per run, `onMissing` | presenti/assenti/misti coperti da test; `pipeline.ts` non toccato | fatta |
 | 4 | `cast`, `filter`, `default`, `rename` | casi felici e di errore per ognuno; `pipeline.ts` intatto | fatta |
 | 5 | `validate` e scarto: severity, provenienza, `maxFailedRatio`, file di scarto | file al 10% invalido -> import parziale; al 40% -> run annullato | fatta |
-| 6 | Errori ed eventi: `IngestError` classificato, eventi run, log strutturato, retry con jitter | un host ricostruisce avanzamento ed errori dai soli eventi | fatta |
+| 6 | Errori ed eventi: `EtlError` classificato, eventi run, log strutturato, retry con jitter | un host ricostruisce avanzamento ed errori dai soli eventi | fatta |
 | 7 | Writer `replace-by`/`upsert`: staging + transazione | re-import per chiave non duplica; errore a meta' -> rollback totale | fatta |
 | 8 | Harness `@etl-js/testing`: `testTransformer`, `mockCtx` | i test dei plugin girano senza servizi esterni; esempi documentati | fatta |
 
@@ -55,6 +55,16 @@ PG_TEST_URL=postgres://postgres:postgres@localhost:5432/postgres npm test
 Cio' che si puo' provare senza database e' provato senza database: la codifica dei valori per `COPY`
 (dove stanno i bug veri: tabulatori, a capo, backslash, `\N` letterale, date, NaN) ha dieci test
 propri, e le forme dell'SQL prodotto dal writer sono verificate su una transazione finta.
+
+## Dopo le fasi
+
+Tre cambi arrivati dopo il piano, tutti su richiesta e tutti con la suite verde a fine lavoro:
+
+- **`ctx.openInput`**: il reader non apre piu' file da se'. `plugin-csv` e' passato a `csv-parse` e
+  `config.path` e' diventato `config.input`.
+- **`@etl-js/plugin-transforms`**: i cinque transformer di base in un pacchetto solo, e
+  `PluginModule.plugins` perche' il loader sappia gestirlo. `lookup` e' rimasto separato.
+- **`IngestError` e' diventato `EtlError`.**
 
 ## Debiti dichiarati
 

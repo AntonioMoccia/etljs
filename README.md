@@ -50,7 +50,7 @@ propria versione. Un pacchetto dichiara i suoi con `export const plugins: Plugin
 
 | Pacchetto | Cosa fa |
 |-----------|---------|
-| `@etl-js/contracts` | tipi, `PROTOCOL_VERSION`, `IngestError`, utility SQL. **Zero dipendenze** |
+| `@etl-js/contracts` | tipi, `PROTOCOL_VERSION`, `EtlError`, utility SQL. **Zero dipendenze** |
 | `@etl-js/core` | `run`, `validate`, `describe`, `listPlugins`, `preview`, loader, eventi, driver Postgres |
 | `@etl-js/testing` | `testTransformer`, `mockCtx`, `recordingDb`: provare un plugin senza servizi esterni |
 | `@etl-js/cli` | `run`, `plugins`, `describe`, `validate`, `preview` |
@@ -128,9 +128,20 @@ che usa questa libreria.
 
 ## Documentazione
 
-- [CLAUDE.md](CLAUDE.md) - invarianti, regole di lavoro, deviazioni deliberate dai contratti
-- [docs/piano.md](docs/piano.md) - stato delle fasi e come si verifica ogni invariante
-- [docs/scrivere-un-plugin.md](docs/scrivere-un-plugin.md) - scheletro di un plugin e come provarlo
+**[docs/](docs/README.md)** e' l'indice completo. In breve:
+
+| Documento | Cosa contiene |
+|---|---|
+| [Concetti](docs/concetti.md) | il modello mentale, in dieci minuti |
+| [Guida rapida](docs/guida-rapida.md) | dal clone al primo import |
+| [La Definition](docs/definition.md) | il formato del file di configurazione |
+| [I plugin](docs/plugin.md) | riferimento completo di ogni config |
+| [API](docs/api.md) | usare la libreria da un altro programma |
+| [Errori, eventi e scarti](docs/errori.md) | codici, severita', come raccogliere gli scarti |
+| [Scrivere un plugin](docs/scrivere-un-plugin.md) | scheletro e harness di test |
+| [Limiti](docs/limiti.md) | cosa non fa, e come si fa comunque |
+| [CLAUDE.md](CLAUDE.md) | invarianti e regole di lavoro |
+| [Piano](docs/piano.md) | stato delle fasi, e come si verifica ogni invariante |
 
 ## Comandi
 

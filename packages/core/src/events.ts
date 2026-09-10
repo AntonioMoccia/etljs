@@ -1,5 +1,5 @@
 import type { Batch, Failed, RunResult } from "@etl-js/contracts";
-import type { IngestError } from "@etl-js/contracts";
+import type { EtlError } from "@etl-js/contracts";
 
 export interface RunStartEvent {
   runId: string;
@@ -29,7 +29,7 @@ export interface RecordFailedEvent {
 export interface RunEndEvent {
   runId: string;
   result: RunResult;
-  error?: IngestError;
+  error?: EtlError;
 }
 
 /**

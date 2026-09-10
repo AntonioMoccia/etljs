@@ -89,7 +89,7 @@ rispetto alla specifica iniziale, documentate qui perche' non siano riscoperte c
    `AsyncIterable<Uint8Array>` e non `NodeJS.ReadableStream` per due motivi: quel tipo obbligherebbe
    `contracts` a dipendere da `@types/node`, e uno `fs.ReadStream` soddisfa gia' la forma povera senza
    adattatori, insieme a uno stream web o a un iteratore su S3.
-5. **`contracts` contiene anche costanti e utility pure** (`PROTOCOL_VERSION`, `IngestError`,
+5. **`contracts` contiene anche costanti e utility pure** (`PROTOCOL_VERSION`, `EtlError`,
    `escapeIdentifier`, whitelist operatori), non solo tipi: se stessero in `core` i plugin non
    potrebbero usarle senza violare I9. Restano a zero dipendenze, e dependency-cruiser lo verifica.
 
@@ -127,6 +127,14 @@ importa `node:fs`**: i byte glieli da' il core tramite `ctx.openInput` (I6).
   salvato UTF-8-BOM ma dichiarato latin1.
 - Le scritture dentro una transazione **non** si ritentano mai: un'istruzione fallita ha gia' abortito
   la transazione. Si ritentano solo letture e connessioni, e solo se l'errore si dichiara `retryable`.
+
+## Documentazione
+
+`docs/` e' la documentazione per chi **usa** la libreria; questo file e' per chi la **modifica**.
+Indice in [docs/README.md](docs/README.md). Non e' facoltativa: `test/documentazione.test.ts`
+verifica che i link non siano rotti, che ogni plugin installato abbia la sua sezione, che ogni
+opzione di config sia documentata e che ogni codice di errore sia spiegato. Aggiungere un'opzione
+senza documentarla e' un test rosso.
 
 ## Comandi
 

@@ -1,6 +1,6 @@
 import {
   ErrorCodes,
-  IngestError,
+  EtlError,
   type ByteStream,
   type Ctx,
   type Logger,
@@ -36,7 +36,7 @@ export function readOnlyCtx(ctx: HostCtx, log: Logger, runId: string): Ctx {
     db: (name) => ctx.db(name),
     openInput: async (ref) => {
       if (!openInput) {
-        throw new IngestError(
+        throw new EtlError(
           `La sorgente "${ref}" non puo' essere aperta: l'host non ha fornito ctx.openInput (vedi createFileInput)`,
           { code: ErrorCodes.INVALID_USAGE, context: { ref } },
         );
@@ -56,7 +56,7 @@ export function writerCtx(ctx: HostCtx, log: Logger, runId: string): WriterCtx {
     ...readOnlyCtx(ctx, log, runId),
     dbWrite: async (name) => {
       if (!dbWrite) {
-        throw new IngestError(
+        throw new EtlError(
           "La destinazione richiede una connessione in scrittura ma l'host non ha fornito ctx.dbWrite",
           { code: ErrorCodes.INVALID_USAGE, context: { db: name } },
         );

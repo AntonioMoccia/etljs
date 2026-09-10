@@ -2,7 +2,7 @@ import type { z } from "zod";
 import { configInvalid } from "@etl-js/contracts";
 
 /**
- * Un lettore di config: valida con Zod, traduce i rilievi in un IngestError e
+ * Un lettore di config: valida con Zod, traduce i rilievi in un EtlError e
  * ricorda il risultato, perche' il motore ripassa la **stessa** config a ogni
  * lotto e ripassare da Zod mille volte non serve a nessuno.
  *

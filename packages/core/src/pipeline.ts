@@ -1,6 +1,6 @@
 import {
   ErrorCodes,
-  IngestError,
+  EtlError,
   type Batch,
   type Definition,
   type Failed,
@@ -106,10 +106,10 @@ export async function run(
 
   /** Attribuisce un errore al passo che l'ha prodotto: senza questo, un host
    * sa solo che "il run e' fallito", che non aiuta nessuno. */
-  const classify = (error: unknown, code: string, step: string): IngestError =>
-    IngestError.is(error)
+  const classify = (error: unknown, code: string, step: string): EtlError =>
+    EtlError.is(error)
       ? error.withContext({ step, runId })
-      : IngestError.wrap(error, { code, context: { step, runId, client: definition.client } });
+      : EtlError.wrap(error, { code, context: { step, runId, client: definition.client } });
 
   const collect = (step: string, source: string, failures: readonly Failed[]): void => {
     for (const failure of failures) {
@@ -243,7 +243,7 @@ export async function run(
       }
     }
   } catch (error) {
-    const failure = IngestError.wrap(error, {
+    const failure = EtlError.wrap(error, {
       code: ErrorCodes.INVALID_USAGE,
       context: { runId, client: definition.client },
     });
@@ -277,7 +277,7 @@ export async function run(
     if (limit === undefined || counters.read === 0) return;
     const ratio = counters.failed / counters.read;
     if (ratio <= limit) return;
-    throw new IngestError(
+    throw new EtlError(
       `Troppe righe scartate: ${counters.failed} su ${counters.read} (${(ratio * 100).toFixed(1)}%), il massimo ammesso e' ${(limit * 100).toFixed(1)}%`,
       {
         code: ErrorCodes.TOO_MANY_FAILED,

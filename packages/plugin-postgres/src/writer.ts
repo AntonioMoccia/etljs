@@ -1,6 +1,6 @@
 import {
   ErrorCodes,
-  IngestError,
+  EtlError,
   escapeIdentifier,
   escapeQualifiedName,
   type Batch,
@@ -30,7 +30,7 @@ let stagingCounter = 0;
 function requireWriterCtx(ctx: Ctx): WriterCtx {
   const candidate = ctx as Partial<WriterCtx>;
   if (typeof candidate.dbWrite !== "function") {
-    throw new IngestError(
+    throw new EtlError(
       "Il writer postgres richiede un contesto con dbWrite fornito dal core",
       { code: ErrorCodes.INVALID_USAGE },
     );
@@ -78,7 +78,7 @@ class PostgresSession implements WriteSession {
     for (const [index, row] of batch.rows.entries()) {
       for (const key of Object.keys(row)) {
         if (known.has(key)) continue;
-        throw new IngestError(
+        throw new EtlError(
           `La riga porta la colonna "${key}", assente da ${this.config.table}`,
           {
             code: PostgresErrorCodes.COLUMN_MISMATCH,
@@ -97,7 +97,7 @@ class PostgresSession implements WriteSession {
       this.config.strategy === "replace-by" ? this.config.replaceKey : this.config.conflictKey;
     const missing = (keys ?? []).filter((key) => !known.has(key));
     if (missing.length > 0) {
-      throw new IngestError(
+      throw new EtlError(
         `La chiave ${missing.join(", ")} non e' fra le colonne scritte: la sostituzione colpirebbe righe sbagliate`,
         {
           code: PostgresErrorCodes.REPLACE_KEY_MISSING,
@@ -111,7 +111,7 @@ class PostgresSession implements WriteSession {
 
   async write(batch: Batch): Promise<void> {
     if (this.#closed) {
-      throw new IngestError("Sessione di scrittura gia' chiusa", {
+      throw new EtlError("Sessione di scrittura gia' chiusa", {
         code: ErrorCodes.INVALID_USAGE,
         context: { table: this.config.table },
       });

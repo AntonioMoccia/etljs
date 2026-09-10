@@ -26,7 +26,7 @@ export const ErrorCodes = {
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes] | (string & {});
 
-export interface IngestErrorOptions {
+export interface EtlErrorOptions {
   code: ErrorCode;
   /** true se ritentare la stessa operazione ha senso (timeout, deadlock, rete). */
   retryable?: boolean;
@@ -40,33 +40,33 @@ export interface IngestErrorOptions {
  * serializzabile (toJSON), cosi' l'host puo' deciderne il destino senza
  * fare pattern matching sul messaggio.
  */
-export class IngestError extends Error {
-  override readonly name = "IngestError";
+export class EtlError extends Error {
+  override readonly name = "EtlError";
   readonly code: ErrorCode;
   readonly retryable: boolean;
   readonly context: Record<string, unknown>;
 
-  constructor(message: string, options: IngestErrorOptions) {
+  constructor(message: string, options: EtlErrorOptions) {
     super(message, options.cause === undefined ? undefined : { cause: options.cause });
     this.code = options.code;
     this.retryable = options.retryable ?? false;
     this.context = options.context ?? {};
   }
 
-  static is(value: unknown): value is IngestError {
-    return value instanceof IngestError;
+  static is(value: unknown): value is EtlError {
+    return value instanceof EtlError;
   }
 
   /** Avvolge un errore sconosciuto senza perderne la causa. */
-  static wrap(value: unknown, options: IngestErrorOptions): IngestError {
-    if (IngestError.is(value)) return value;
+  static wrap(value: unknown, options: EtlErrorOptions): EtlError {
+    if (EtlError.is(value)) return value;
     const message = value instanceof Error ? value.message : String(value);
-    return new IngestError(message, { ...options, cause: value });
+    return new EtlError(message, { ...options, cause: value });
   }
 
   /** Lo stesso errore con qualche dato diagnostico in piu'. */
-  withContext(extra: Record<string, unknown>): IngestError {
-    return new IngestError(this.message, {
+  withContext(extra: Record<string, unknown>): EtlError {
+    return new EtlError(this.message, {
       code: this.code,
       retryable: this.retryable,
       context: { ...this.context, ...extra },
@@ -97,11 +97,11 @@ export interface ConfigIssue {
  * da altro che da @etl-js/contracts (I9). Non conosce Zod: riceve i rilievi
  * gia' appiattiti, cosi' resta a zero dipendenze.
  */
-export function configInvalid(plugin: string, issues: ConfigIssue[]): IngestError {
+export function configInvalid(plugin: string, issues: ConfigIssue[]): EtlError {
   const summary = issues
     .map((issue) => (issue.path ? `${issue.path}: ${issue.message}` : issue.message))
     .join("; ");
-  return new IngestError(`Config del plugin ${plugin} non valida - ${summary}`, {
+  return new EtlError(`Config del plugin ${plugin} non valida - ${summary}`, {
     code: ErrorCodes.CONFIG_INVALID,
     context: { plugin, issues },
   });

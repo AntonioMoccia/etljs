@@ -67,7 +67,7 @@ describe("run", () => {
       .register(writerOf(sink));
 
     await expect(run(definition(), hostCtx(), { registry })).rejects.toMatchObject({
-      name: "IngestError",
+      name: "EtlError",
     });
     expect(sink.outcome).toEqual(["open", "rollback"]);
   });

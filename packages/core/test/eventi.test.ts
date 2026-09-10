@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import type { RunResult } from "@etl-js/contracts";
 import { Registry, run, withRetry, type RunEvents } from "@etl-js/core";
-import { IngestError } from "@etl-js/contracts";
+import { EtlError } from "@etl-js/contracts";
 import { definition, hostCtx, pickyTransformer, readerOf, writerOf } from "./fakes.js";
 
 /**
@@ -163,7 +163,7 @@ describe("withRetry", () => {
       async () => {
         tentativi += 1;
         if (tentativi < 3) {
-          throw new IngestError("deadlock", { code: "DB_ERROR", retryable: true });
+          throw new EtlError("deadlock", { code: "DB_ERROR", retryable: true });
         }
         return "fatto";
       },
@@ -181,7 +181,7 @@ describe("withRetry", () => {
     await withRetry(
       async () => {
         if (attese.length < 1) {
-          throw new IngestError("contesa", { code: "DB_ERROR", retryable: true });
+          throw new EtlError("contesa", { code: "DB_ERROR", retryable: true });
         }
         return 1;
       },
@@ -196,7 +196,7 @@ describe("withRetry", () => {
       withRetry(
         async () => {
           tentativi += 1;
-          throw new IngestError("colonna assente", { code: "DB_ERROR", retryable: false });
+          throw new EtlError("colonna assente", { code: "DB_ERROR", retryable: false });
         },
         { attempts: 5, sleep: async () => {} },
       ),
@@ -210,7 +210,7 @@ describe("withRetry", () => {
       withRetry(
         async () => {
           tentativi += 1;
-          throw new IngestError("ancora contesa", { code: "DB_ERROR", retryable: true });
+          throw new EtlError("ancora contesa", { code: "DB_ERROR", retryable: true });
         },
         { attempts: 3, sleep: async () => {} },
       ),
@@ -226,7 +226,7 @@ describe("withRetry", () => {
       withRetry(
         async () => {
           tentativi += 1;
-          throw new IngestError("contesa", { code: "DB_ERROR", retryable: true });
+          throw new EtlError("contesa", { code: "DB_ERROR", retryable: true });
         },
         { attempts: 5, sleep: async () => {}, signal: controller.signal },
       ),

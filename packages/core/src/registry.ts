@@ -1,6 +1,6 @@
 import {
   ErrorCodes,
-  IngestError,
+  EtlError,
   PROTOCOL_VERSION,
   type Manifest,
   type Plugin,
@@ -22,7 +22,7 @@ export class Registry {
     assertUsableManifest(manifest);
     const existing = this.#plugins.get(manifest.name);
     if (existing && existing !== plugin) {
-      throw new IngestError(
+      throw new EtlError(
         `Due plugin diversi dichiarano il nome "${manifest.name}"`,
         {
           code: ErrorCodes.INVALID_USAGE,
@@ -56,13 +56,13 @@ export class Registry {
   require(name: string, kind?: PluginKind): Plugin {
     const plugin = this.#plugins.get(name);
     if (!plugin) {
-      throw new IngestError(`Plugin "${name}" non registrato`, {
+      throw new EtlError(`Plugin "${name}" non registrato`, {
         code: ErrorCodes.PLUGIN_NOT_FOUND,
         context: { name, available: this.list().map((m) => m.name) },
       });
     }
     if (kind && plugin.manifest.kind !== kind) {
-      throw new IngestError(
+      throw new EtlError(
         `Il plugin "${name}" e' di tipo ${plugin.manifest.kind}, qui serve ${kind}`,
         {
           code: ErrorCodes.INVALID_USAGE,
@@ -88,13 +88,13 @@ export class Registry {
 /** Verifica che un manifest sia utilizzabile prima che il run parta, non a meta' strada. */
 export function assertUsableManifest(manifest: Manifest): void {
   if (!manifest || typeof manifest.name !== "string" || manifest.name.length === 0) {
-    throw new IngestError("Manifest senza nome", {
+    throw new EtlError("Manifest senza nome", {
       code: ErrorCodes.INVALID_USAGE,
       context: { manifest },
     });
   }
   if (manifest.protocol !== PROTOCOL_VERSION) {
-    throw new IngestError(
+    throw new EtlError(
       `Il plugin "${manifest.name}" parla il protocollo ${manifest.protocol}, questo motore il ${PROTOCOL_VERSION}`,
       {
         code: ErrorCodes.PROTOCOL_MISMATCH,

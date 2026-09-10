@@ -5,7 +5,7 @@
  * Regola I7: i VALORI passano sempre come parametri ($1, $2...); solo gli
  * IDENTIFICATORI vengono interpolati, e solo dopo escapeIdentifier.
  */
-import { IngestError, ErrorCodes } from "./errors.js";
+import { EtlError, ErrorCodes } from "./errors.js";
 
 /**
  * Racchiude un identificatore fra doppi apici raddoppiando quelli interni,
@@ -13,14 +13,14 @@ import { IngestError, ErrorCodes } from "./errors.js";
  */
 export function escapeIdentifier(identifier: string): string {
   if (typeof identifier !== "string" || identifier.length === 0) {
-    throw new IngestError("Identificatore SQL vuoto", {
+    throw new EtlError("Identificatore SQL vuoto", {
       code: ErrorCodes.INVALID_USAGE,
       context: { identifier },
     });
   }
   // Il byte NUL non e' rappresentabile in un identificatore Postgres.
   if (identifier.includes("\u0000")) {
-    throw new IngestError("Identificatore SQL con byte NUL", {
+    throw new EtlError("Identificatore SQL con byte NUL", {
       code: ErrorCodes.INVALID_USAGE,
       context: { identifier },
     });
@@ -59,7 +59,7 @@ export type SqlOperatorName = keyof typeof SQL_OPERATORS;
 export function sqlOperator(name: string): string {
   const operator = (SQL_OPERATORS as Record<string, string | undefined>)[name];
   if (operator === undefined) {
-    throw new IngestError(`Operatore SQL non ammesso: ${name}`, {
+    throw new EtlError(`Operatore SQL non ammesso: ${name}`, {
       code: ErrorCodes.INVALID_USAGE,
       context: { operator: name, allowed: Object.keys(SQL_OPERATORS) },
     });

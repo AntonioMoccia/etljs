@@ -1,4 +1,4 @@
-import { ErrorCodes, IngestError } from "@etl-js/contracts";
+import { ErrorCodes, EtlError } from "@etl-js/contracts";
 
 /**
  * Codifica per il formato testo di `COPY ... FROM STDIN`, che e' quello di
@@ -11,7 +11,7 @@ export function encodeCopyValue(value: unknown): string {
 
   if (typeof value === "number") {
     if (!Number.isFinite(value)) {
-      throw new IngestError(`Valore numerico non finito: ${String(value)}`, {
+      throw new EtlError(`Valore numerico non finito: ${String(value)}`, {
         code: ErrorCodes.DB_ERROR,
         context: { value: String(value) },
       });
@@ -23,7 +23,7 @@ export function encodeCopyValue(value: unknown): string {
   if (typeof value === "bigint") return value.toString();
   if (value instanceof Date) {
     if (Number.isNaN(value.getTime())) {
-      throw new IngestError("Data non valida", { code: ErrorCodes.DB_ERROR });
+      throw new EtlError("Data non valida", { code: ErrorCodes.DB_ERROR });
     }
     return value.toISOString();
   }

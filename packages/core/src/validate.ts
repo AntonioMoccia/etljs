@@ -5,7 +5,7 @@ import type { Ajv2020 } from "ajv/dist/2020.js";
 import type { FormatsPlugin } from "ajv-formats";
 import {
   ErrorCodes,
-  IngestError,
+  EtlError,
   type Definition,
   type Manifest,
   type Plugin,
@@ -71,7 +71,7 @@ function validatorFor(manifest: Manifest): ValidateFunction | undefined {
     compiled.set(schema, validator);
     return validator;
   } catch (error) {
-    throw new IngestError(
+    throw new EtlError(
       `Il plugin "${manifest.name}" espone un configSchema che non e' un JSON Schema valido`,
       {
         code: ErrorCodes.INVALID_USAGE,
@@ -252,7 +252,7 @@ export function assertValid(definition: Definition, options: ValidateOptions = {
   if (result.valid) return;
   const errors = result.issues.filter((issue) => issue.severity === "error");
   const summary = errors.map((issue) => `${issue.path}: ${issue.message}`).join("; ");
-  throw new IngestError(`Definition non valida - ${summary}`, {
+  throw new EtlError(`Definition non valida - ${summary}`, {
     code: ErrorCodes.CONFIG_INVALID,
     context: { client: definition?.client, issues: errors },
   });
