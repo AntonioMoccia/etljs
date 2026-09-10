@@ -43,6 +43,13 @@ Gli ospiti sono almeno tre - un'applicazione che incorpora la libreria, la CLI, 
 e' privilegiato. La cerniera e' sempre la stessa: **l'ospite costruisce il `Ctx` e consegna i
 plugin, il motore esegue.**
 
+**Dove vive:** etl-js resta un **repo suo, pubblicabile su npm**. Il progetto piu' grande - quello
+che avra' autenticazione, autorizzazioni, GUI - lo installa come una dipendenza qualunque. Non e'
+una preferenza organizzativa: e' l'unica forma in cui "importabile in qualsiasi progetto" e' vera
+**per costruzione**. Un pacchetto che non puo' vedere il progetto grande non puo' esserne
+contaminato, e il fallimento tipico di questo scenario - il prodotto che colonizza pian piano la
+libreria finche' nessun altro puo' piu' usarla - diventa impossibile invece che sconsigliato.
+
 ## D1 - La regola di copertura
 
 | | Copre | Varia con |
@@ -221,10 +228,78 @@ quelli di `lookup` dal database.
 
 ---
 
+## D9 - Autenticazione e autorizzazione stanno fuori, tranne un punto
+
+Il progetto piu' grande avra' utenti, ruoli e permessi. Il motore no. Ma l'autorizzazione tocca
+quattro superfici, e conviene sapere dove si applica ciascuna:
+
+| Cosa si autorizza | Dove si applica | Stato |
+|---|---|---|
+| quali plugin puo' usare un utente | la `Registry` che l'ospite consegna | coperto da D4 |
+| quali database logici puo' raggiungere | `ctx.db(name)`: e' l'ospite a mappare i nomi logici | coperto da I6 |
+| quali file puo' leggere | `ctx.openInput` + `createFileInput({ baseDir })` | coperto |
+| **su quale tabella puo' scrivere** | **niente glielo impedisce** | vedi sotto |
+
+Il buco: una Definition dichiara `"table": "landing_piani"` e il writer ci scrive. Se un domani le
+Definition arrivano dagli utenti, `"table": "utenti"` e' altrettanto valida. L'ospite non puo'
+controllarlo dall'esterno senza sapere che quel campo e' un nome di tabella - cioe' senza far
+entrare la conoscenza dei plugin nell'ospite, che e' il male che I2 evita.
+
+**La risposta e' quella gia' usata per I4: la fa rispettare il database.** L'ospite consegna una
+connessione il cui ruolo Postgres ha i `GRANT` solo sulle tabelle permesse, e il server rifiuta il
+resto, esattamente come oggi rifiuta le scritture dei transformer con
+`default_transaction_read_only=on`. Zero modifiche al motore, e l'autorizzazione finisce nell'unico
+posto che non si puo' aggirare.
+
+L'ospite **puo'** leggere `definition.destination.config.table` per dare un errore comprensibile
+prima di far partire il run: e' cortesia verso l'utente, non sicurezza, e va scritto cosi' perche'
+nessuno lo scambi per un controllo.
+
+**Tracciabilita':** "chi ha caricato che cosa" e' gia' rispondibile senza che il motore sappia chi
+sia un utente. L'ospite genera il `runId`, lo passa in `Ctx`, e il transformer `default` con
+`fromMeta` lo scrive dentro ogni riga insieme al file di origine e al numero di riga. All'ospite
+basta ricordare la coppia runId -> utente.
+
+### I10 - Nessun concetto di identita' nel motore
+
+> Il motore non conosce utenti, tenant, ruoli, permessi, sessioni. Se qualcuno propone un
+> `tenantId` nei contratti o un `permissions` nel `Ctx`, l'autorizzazione sta entrando nel posto
+> sbagliato: va spostata nell'ospite, nella `Registry`, nel `Ctx` o nei `GRANT`.
+
+Da aggiungere alla tabella degli invarianti in `CLAUDE.md`. A differenza di I2 e I9 non e'
+verificabile da dependency-cruiser: la difesa strutturale e' che etl-js sta in un repo suo e non
+puo' importare nulla dal progetto grande (D0). Il resto e' revisione del codice.
+
+## D10 - Incorporare etl-js deve costare cinque righe, non venticinque
+
+"Importabile in qualsiasi progetto" oggi e' vero ma caro: costruire un `HostCtx` richiede ~25 righe
+di impalcatura, e la CLI le scrive **due volte** - in `run` e in `preview` - con comportamenti
+leggermente diversi fra le due. D6 ne toglie gia' una (`secretRef`), lasciando quattro campi:
+`openInput`, `db`, `log`, `signal`, piu' `dbWrite` se si scrive.
+
+Si aggiunge al core una comodita':
+
+```ts
+export function createHostCtx(options: {
+  databases?: Record<string, PostgresDbConfig>;
+  baseDir?: string;
+  log?: Logger;
+  signal?: AbortSignal;
+}): Promise<{ ctx: HostCtx; close(): Promise<void> }>;
+```
+
+Non introduce accoppiamenti nuovi: `createFileInput` e `createPostgresProvider` stanno gia' nel
+core. Ed e' **solo** una comodita': resta pienamente supportato costruire il `Ctx` a mano, ed e'
+quello che fara' ogni ospite con un proprio pool, un proprio object storage o una propria politica
+di autorizzazione (D9). La comodita' non deve diventare la via benedetta, altrimenti riporta dentro
+il motore le decisioni che I6 tiene fuori.
+
+Beneficio collaterale: la CLI smette di avere due costruzioni del contesto che possono divergere.
+
 ## Cosa non cambia
 
 - I nove invarianti, tutti. D4 e D6 rafforzano I6; D5 non tocca I4 (la sessione riceve un `Ctx` in
-  sola lettura come oggi).
+  sola lettura come oggi). D9 ne **aggiunge** uno, I10.
 - I sette pacchetti esistenti: sono unita' di distribuzione, e chi vuole `plugin-csv` non deve
   tirarsi dietro Postgres. Nessuno viene fuso; D4 ne aggiunge un ottavo (`loader`), e lo aggiunge
   proprio per tenere separato cio' che oggi e' mescolato.
@@ -237,7 +312,7 @@ quelli di `lookup` dal database.
 | Pacchetto | Che cosa cambia |
 |---|---|
 | `contracts` | `Transformer`/`TransformSession` (D5), `PROTOCOL_VERSION` 2, via `run-cache.ts`, via `secretRef`, via `capabilities`/`category`, via `PluginModule` |
-| `core` | `pipeline.ts` apre e usa le sessioni; `context.ts` senza `secretRef`; `loader.ts` esce |
+| `core` | `pipeline.ts` apre e usa le sessioni; `context.ts` senza `secretRef`; `loader.ts` esce; nasce `createHostCtx` (D10) |
 | `loader` (nuovo) | accoglie `loadPlugin`, `createLoader`, i prefissi npm e `PluginModule` |
 | `cli` | usa `@etl-js/loader`; `builtins.ts` e la costruzione del `Ctx` si adeguano |
 | `plugin-transforms` | 5 transformer a sessione, `configReader` dimezzato, `seenByRun` sparisce; nasce `dedup` |
@@ -260,7 +335,9 @@ repo. E' esattamente il motivo per cui si fa adesso.
 3. **D4** - il loader esce dal core e diventa `@etl-js/loader`; nasce la regola dependency-cruiser
    che impedisce a `core` di tornare a dipenderne.
 4. **D6 + D7** - `secretRef`, `capabilities`, `category` via.
-5. **D1 + D3 + D8** - la regola d'ammissione e la scelta su `preview` in `CLAUDE.md` e `docs/`.
+5. **D10** - `createHostCtx`, e la CLI che smette di costruire il contesto due volte.
+6. **D1 + D3 + D8 + D9/I10** - regola d'ammissione, scelta su `preview`, invariante I10 e la nota
+   sui `GRANT` in `CLAUDE.md` e `docs/`.
 
 Ogni passo si chiude con `npm run check` verde: e' il criterio di done gia' in uso nel progetto.
 
