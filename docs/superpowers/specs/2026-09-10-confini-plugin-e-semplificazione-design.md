@@ -34,13 +34,14 @@ Le tre parti non sono descrittive, sono vincolanti:
   discende D3 (se la libreria standard cresce su richiesta, "estendere" diventa "aspettare che lo
   aggiungano loro") e ne discende l'urgenza di D5 (un protocollo si aggiusta finche' nessuno lo usa
   da fuori).
-- **GUI se l'utente vuole**: la GUI e' **un ospite come gli altri**, accanto alla CLI e
-  all'applicazione che incorpora la libreria. Non e' il padrone del motore. Ne discende D4: se il
-  motore caricasse da se' i plugin, la GUI che "installa i plugin" starebbe combattendo con lui
-  invece di decidere.
+- **GUI se l'utente vuole**: la GUI non e' un plugin e non e' un accessorio. E' un **ospite** nel
+  senso tecnico - chi *contiene* il motore - e nello scenario piu' probabile e' addirittura **il
+  prodotto**, con etl-js come suo motore interno. Ne discende D4: se fosse il motore a caricare da
+  se' i plugin, la GUI che "installa i plugin" starebbe combattendo con lui invece di decidere.
 
-Tre ospiti, una sola cerniera: **l'ospite costruisce il `Ctx` e consegna i plugin, il motore
-esegue.**
+Gli ospiti sono almeno tre - un'applicazione che incorpora la libreria, la CLI, una GUI - e nessuno
+e' privilegiato. La cerniera e' sempre la stessa: **l'ospite costruisce il `Ctx` e consegna i
+plugin, il motore esegue.**
 
 ## D1 - La regola di copertura
 
@@ -102,8 +103,16 @@ lo importa: **decide di eseguire codice in base a una stringa che sta in un file
 configurazione.** In un'installazione interna non e' un problema; in un SaaS multi-tenant lo e'.
 
 `loadPlugin`, `loadPluginPackage`, `createLoader`, `candidateSpecifiers`, `DEFAULT_PREFIXES` e il
-tipo `PluginModule` **escono dal core** e vanno in `@etl-js/cli`. Il core tiene `Registry` e il tipo
-`PluginResolver`, e riceve i plugin gia' pronti.
+tipo `PluginModule` **escono dal core** e vanno in un pacchetto proprio, **`@etl-js/loader`**, che
+dipende da `core` e `contracts`. Il core tiene `Registry` e il tipo `PluginResolver`, e riceve i
+plugin gia' pronti.
+
+Un pacchetto proprio e non `@etl-js/cli`: per D0 la GUI e' un ospite alla pari, e con il loader
+dentro la CLI una **interfaccia grafica dovrebbe dipendere da una interfaccia a riga di comando**
+per poter installare un plugin. CLI e GUI lo usano entrambe alla pari; chi incorpora la libreria in
+un'applicazione che i plugin li conosce gia' non lo installa affatto. E' anche cio' che rende D4 un
+fatto invece di una promessa: "il motore non carica codice" diventa vero **strutturalmente**, perche'
+il codice che carica codice sta in un pacchetto che devi installare apposta.
 
 Tre guadagni:
 
@@ -186,6 +195,26 @@ dice quali campi della riga esistono all'ingresso di quello stadio**: non puo' o
 Si sceglie **`preview()`**: la GUI chiede un file d'esempio e mostra i campi veri, stadio per stadio.
 Empirico, gia' implementato, zero aggiunte al protocollo.
 
+**Come**, in concreto: per sapere che campi entrano nello stadio *k*, la GUI chiama `preview()` su
+una Definition con i **primi k-1** transformer. Il risultato e' provatamente lo stesso che darebbe il
+run intero, perche' i transformer sono side-effect free (I4): rieseguire i primi stadi sulle stesse
+righe non puo' dare un esito diverso. **E' I4 a rendere possibile questa GUI**, non solo
+l'idempotenza dei run.
+
+Il costo e' trascurabile e vale la pena dirlo, perche' a occhio sembra alto: `preview` si ferma al
+**primo lotto** che raggiunge `limitRows`, quindi sei chiamate su un campione di venti righe sono
+sei letture di un lotto, non sei letture del file.
+
+**Via d'uscita, se un giorno servisse:** un evento `onStepBatch` emesso da `pipeline.ts` dopo ogni
+transformer, e un campo per stadio nel `PreviewResult`. Sono poche righe e - cosa che qui conta -
+**non e' un cambio di protocollo**: `RunEvents` e' rivolto all'host, non ai plugin, quindi si puo'
+aggiungere in qualsiasi momento senza rompere nessun plugin esistente. Non si fa ora perche'
+sarebbe API costruita per un consumatore che non esiste ancora e non puo' essere intervistato -
+lo stesso motivo per cui D6 e D7 tolgono roba.
+
+Gli **scarti** sono gia' attribuiti per stadio: `onRecordFailed` porta il campo `step`. Il buco
+riguarda solo le righe sopravvissute.
+
 Si **scarta** l'alternativa (dichiarare i campi in uscita nel manifest): sarebbe lavoro su ogni
 plugin e non potrebbe mai essere accurato, perche' i campi di `rename` dipendono dalla config e
 quelli di `lookup` dal database.
@@ -196,8 +225,9 @@ quelli di `lookup` dal database.
 
 - I nove invarianti, tutti. D4 e D6 rafforzano I6; D5 non tocca I4 (la sessione riceve un `Ctx` in
   sola lettura come oggi).
-- I sette pacchetti: sono unita' di distribuzione, e chi vuole `plugin-csv` non deve tirarsi dietro
-  Postgres.
+- I sette pacchetti esistenti: sono unita' di distribuzione, e chi vuole `plugin-csv` non deve
+  tirarsi dietro Postgres. Nessuno viene fuso; D4 ne aggiunge un ottavo (`loader`), e lo aggiunge
+  proprio per tenere separato cio' che oggi e' mescolato.
 - `contracts` a zero dipendenze e le regole di dependency-cruiser.
 - `EtlError` e la classificazione degli errori.
 - La forma di un run: una sorgente, N transformer, una destinazione.
@@ -208,7 +238,8 @@ quelli di `lookup` dal database.
 |---|---|
 | `contracts` | `Transformer`/`TransformSession` (D5), `PROTOCOL_VERSION` 2, via `run-cache.ts`, via `secretRef`, via `capabilities`/`category`, via `PluginModule` |
 | `core` | `pipeline.ts` apre e usa le sessioni; `context.ts` senza `secretRef`; `loader.ts` esce |
-| `cli` | accoglie il loader; `builtins.ts` e la costruzione del `Ctx` si adeguano |
+| `loader` (nuovo) | accoglie `loadPlugin`, `createLoader`, i prefissi npm e `PluginModule` |
+| `cli` | usa `@etl-js/loader`; `builtins.ts` e la costruzione del `Ctx` si adeguano |
 | `plugin-transforms` | 5 transformer a sessione, `configReader` dimezzato, `seenByRun` sparisce; nasce `dedup` |
 | `plugin-lookup` | a sessione: spariscono `cachesByRun`, `configId`, `parsedConfigs` |
 | `plugin-csv`, `plugin-postgres` | solo `protocol: 2` nel manifest |
@@ -226,7 +257,8 @@ repo. E' esattamente il motivo per cui si fa adesso.
 1. **D5** - transformer a sessione, protocollo 2. Per primo perche' irreversibile.
 2. **D3.1** - `dedup` scritto sulla nuova API: e' anche la prova che l'API nuova regge, e chiude il
    difetto dell'`upsert` con chiavi duplicate.
-3. **D4** - il loader esce dal core.
+3. **D4** - il loader esce dal core e diventa `@etl-js/loader`; nasce la regola dependency-cruiser
+   che impedisce a `core` di tornare a dipenderne.
 4. **D6 + D7** - `secretRef`, `capabilities`, `category` via.
 5. **D1 + D3 + D8** - la regola d'ammissione e la scelta su `preview` in `CLAUDE.md` e `docs/`.
 
@@ -240,6 +272,7 @@ Ogni passo si chiude con `npm run check` verde: e' il criterio di done gia' in u
 | La regola d'ammissione verra' aggirata sotto la pressione di un cliente che paga | Sta scritta in `CLAUDE.md` accanto agli invarianti, dove si legge prima di aggiungere codice |
 | `flush()` resta senza utenti reali anche dopo | Accettato: e' l'unico modo per lasciare aperto il caso aggregazione a chi scrive plugin fuori dal repo |
 | Il loader spostato rompe il caricamento per nome | Il test `cli > l'esempio completo e' valido con i plugin caricati da npm` lo copre gia' |
+| Un ottavo pacchetto e' un pacchetto in piu' da pubblicare e versionare | Accettato: e' il prezzo per cui D4 e' strutturale e non una promessa. Chi non carica plugin dinamicamente non lo installa |
 
 ## Fuori scopo
 
