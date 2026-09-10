@@ -52,6 +52,9 @@ export function fakeWriterCtx(tx: WriteTransaction): WriterCtx & { openedDbs: st
   return {
     openedDbs,
     runId: "run-test",
+    openInput: async () => {
+      throw new Error("un writer non legge sorgenti");
+    },
     db: () => {
       throw new Error("il writer non deve usare la connessione in sola lettura");
     },

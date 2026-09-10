@@ -25,13 +25,14 @@ describe.skipIf(!built)("caricamento dei plugin da npm", () => {
   test("il core esegue una Definition avendo solo il loader, senza plugin registrati", async () => {
     const stdout = await runScript(`
       import { readFile } from "node:fs/promises";
-      import { Registry, createLoader, run } from "@etl-js/core";
+      import { Registry, createFileInput, createLoader, run } from "@etl-js/core";
 
       const definition = JSON.parse(await readFile("examples/acme-fase0.json", "utf8"));
       const registry = new Registry();            // vuoto: nessun plugin conosciuto
       const silent = { debug(){}, info(){}, warn(){}, error(){}, child(){ return silent; } };
 
       const result = await run(definition, {
+        openInput: createFileInput(),
         db: () => { throw new Error("niente database"); },
         secretRef: (ref) => ref,
         log: silent,

@@ -3,10 +3,10 @@
   "source": {
     "type": "csv",
     "config": {
-      "path": "examples/acme.csv",
       "delimiter": ";",
       "encoding": "latin1",
-      "skipRows": 3
+      "skipRows": 3,
+      "input": "examples/acme.csv"
     }
   },
   "transform": [

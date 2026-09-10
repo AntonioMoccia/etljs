@@ -29,6 +29,7 @@
     "@etl-js/contracts": "^0.1.0"
   },
   "dependencies": {
+    "csv-parse": "^7.0.2",
     "zod": "^4.0.0"
   }
 }

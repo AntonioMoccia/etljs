@@ -3,7 +3,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import type { Definition, Logger, Row } from "@etl-js/contracts";
-import { Registry, createPostgresProvider, run, type DbProvider, type HostCtx } from "@etl-js/core";
+import {
+  Registry,
+  createFileInput,
+  createPostgresProvider,
+  run,
+  type DbProvider,
+  type HostCtx,
+} from "@etl-js/core";
 import csv from "@etl-js/plugin-csv";
 import cast from "@etl-js/plugin-cast";
 import postgres from "@etl-js/plugin-postgres";
@@ -33,6 +40,7 @@ const silent: Logger = {
 
 function ctx(): HostCtx {
   return {
+    openInput: createFileInput(),
     db: (name) => provider.db(name),
     secretRef: (ref) => ref,
     log: silent,
@@ -56,7 +64,7 @@ async function piano(name: string, righe: [string, string, string][]): Promise<s
 function definition(path: string, strategy: "append" | "replace-by" | "upsert"): Definition {
   return {
     client: "acme",
-    source: { type: "csv", config: { path, delimiter: ";" } },
+    source: { type: "csv", config: { input: path, delimiter: ";" } },
     transform: [
       {
         type: "cast",

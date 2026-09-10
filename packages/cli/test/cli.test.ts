@@ -50,7 +50,7 @@ describe("cli", () => {
     const { code, out } = await cli("describe", "csv");
     const schema = JSON.parse(out) as { properties: Record<string, unknown> };
     expect(code).toBe(0);
-    expect(schema.properties["path"]).toBeDefined();
+    expect(schema.properties["input"]).toBeDefined();
     expect(schema.properties["delimiter"]).toBeDefined();
   });
 
@@ -81,7 +81,7 @@ describe("cli", () => {
     const { code, err } = await cli("validate", path);
 
     expect(code).toBe(1);
-    expect(err).toContain("source.config.path");
+    expect(err).toContain("source.config.input");
     expect(err).toContain("chiave non prevista: delimitatore");
     expect(err).toContain("source.config.skipRows");
     expect(err).toContain("destination.config.strategy");

@@ -5,6 +5,7 @@
 import type {
   Batch,
   BatchMeta,
+  ByteStream,
   Ctx,
   Failed,
   Logger,
@@ -71,6 +72,11 @@ export function recordingDb(
 
 export interface MockCtxOptions {
   runId?: string;
+  /**
+   * Sorgenti per `ctx.openInput`, come testo o byte gia' pronti: un test di un
+   * reader non deve toccare il disco.
+   */
+  inputs?: Record<string, string | Uint8Array>;
   /** Database per nome logico. Chiedere un nome assente e' un errore, come in produzione. */
   databases?: Record<string, ReadOnlyDb>;
   secrets?: Record<string, string>;
@@ -89,8 +95,24 @@ export interface MockCtx extends Ctx {
 export function mockCtx(options: MockCtxOptions = {}): MockCtx {
   const log = options.logger ?? recordingLogger();
   const databases = options.databases ?? {};
+  const inputs = options.inputs ?? {};
   return {
     runId: options.runId ?? "run-di-prova",
+    openInput: async (ref): Promise<ByteStream> => {
+      const content = inputs[ref];
+      if (content === undefined) {
+        throw new Error(
+          `Il test non ha fornito la sorgente "${ref}". Passala a mockCtx({ inputs: { "${ref}": "..." } })`,
+        );
+      }
+      const bytes =
+        typeof content === "string" ? new TextEncoder().encode(content) : content;
+      return {
+        async *[Symbol.asyncIterator]() {
+          yield bytes;
+        },
+      };
+    },
     db: (name) => {
       const db = databases[name];
       if (!db) {

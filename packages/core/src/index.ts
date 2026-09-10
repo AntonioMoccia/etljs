@@ -20,6 +20,12 @@ export {
 export { preview, type PreviewResult } from "./preview.js";
 export { withRetry, type RetryOptions } from "./retry.js";
 export {
+  createFileInput,
+  createMemoryInput,
+  type InputResolver,
+  type FileInputOptions,
+} from "./input.js";
+export {
   loadPlugin,
   createLoader,
   candidateSpecifiers,

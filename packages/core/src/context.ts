@@ -1,6 +1,7 @@
 import {
   ErrorCodes,
   IngestError,
+  type ByteStream,
   type Ctx,
   type Logger,
   type WriteTransaction,
@@ -11,9 +12,15 @@ import {
  * Contesto che l'host consegna a `run()`. E' un `Ctx` normale piu' la
  * capacita' di aprire transazioni: e' l'host a possedere pool e credenziali (I6).
  */
-export interface HostCtx extends Omit<Ctx, "runId"> {
+export interface HostCtx extends Omit<Ctx, "runId" | "openInput"> {
   /** Se assente, il runId lo genera `run()`. */
   runId?: string;
+  /**
+   * Come aprire le sorgenti. Se l'host non la fornisce, un reader che ne ha
+   * bisogno fallisce con un messaggio che dice cosa manca, invece di leggere
+   * di nascosto dal filesystem. Vedi `createFileInput`.
+   */
+  openInput?(ref: string): Promise<ByteStream>;
   dbWrite?(name: string): Promise<WriteTransaction>;
 }
 
@@ -23,9 +30,19 @@ export interface HostCtx extends Omit<Ctx, "runId"> {
  * quindi un transformer non puo' scrivere nemmeno per sbaglio (I4).
  */
 export function readOnlyCtx(ctx: HostCtx, log: Logger, runId: string): Ctx {
+  const openInput = ctx.openInput?.bind(ctx);
   return {
     runId,
     db: (name) => ctx.db(name),
+    openInput: async (ref) => {
+      if (!openInput) {
+        throw new IngestError(
+          `La sorgente "${ref}" non puo' essere aperta: l'host non ha fornito ctx.openInput (vedi createFileInput)`,
+          { code: ErrorCodes.INVALID_USAGE, context: { ref } },
+        );
+      }
+      return openInput(ref);
+    },
     secretRef: (ref) => ctx.secretRef(ref),
     log,
     signal: ctx.signal,

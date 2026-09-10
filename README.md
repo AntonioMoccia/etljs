@@ -49,7 +49,7 @@ grafo delle dipendenze punta tutto verso `@etl-js/contracts`, e dependency-cruis
 | `@etl-js/core` | `run`, `validate`, `describe`, `listPlugins`, `preview`, loader, eventi, driver Postgres |
 | `@etl-js/testing` | `testTransformer`, `mockCtx`, `recordingDb`: provare un plugin senza servizi esterni |
 | `@etl-js/cli` | `run`, `plugins`, `describe`, `validate`, `preview` |
-| `@etl-js/plugin-csv` | reader CSV in streaming, delimitatore/encoding/`skipRows` configurabili |
+| `@etl-js/plugin-csv` | reader CSV in streaming su `csv-parse`; non apre file da se' (`ctx.openInput`) |
 | `@etl-js/plugin-postgres` | writer con `append`, `upsert`, `replace-by` |
 | `@etl-js/plugin-lookup` | collega le righe a dati gia' sul database, in batch |
 | `@etl-js/plugin-cast` | date, settimane ISO, decimali con la virgola, booleani |
@@ -66,7 +66,7 @@ Questa e' l'intera configurazione di un cliente. Non c'e' nulla di specifico ad 
 {
   "client": "acme",
   "source": { "type": "csv", "config": {
-    "path": "examples/acme.csv", "delimiter": ";", "encoding": "latin1", "skipRows": 3 } },
+    "input": "examples/acme.csv", "delimiter": ";", "encoding": "latin1", "skipRows": 3 } },
   "transform": [
     { "type": "filter", "config": { "drop": [{ "field": "Nr Ordine", "empty": true }] } },
     { "type": "rename", "config": { "map": { "Nr Ordine": "ordine_cliente", "Data": "data_consegna" } } },
@@ -104,6 +104,8 @@ const provider = await createPostgresProvider({
 
 const registry = new Registry();
 const result = await run(definition, {
+  // In produzione questa risolve su object storage, e i plugin non cambiano.
+  openInput: (ref) => apriDaS3(ref),
   db: (name) => provider.db(name),
   dbWrite: (name) => provider.dbWrite(name),
   secretRef: (ref) => vault.get(ref),

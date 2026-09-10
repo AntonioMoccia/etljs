@@ -1,5 +1,14 @@
 import type { Row } from "./rows.js";
 
+/**
+ * Un flusso di byte, comunque prodotto. E' volutamente il tipo piu' povero
+ * possibile: un `fs.ReadStream` di Node lo soddisfa cosi' com'e', ma anche un
+ * iteratore su un oggetto di object storage o uno stream web. Cosi' il
+ * contratto non si lega al filesystem ne' a Node (I6), e `contracts` resta a
+ * zero dipendenze, `@types/node` compreso (I9).
+ */
+export type ByteStream = AsyncIterable<Uint8Array>;
+
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
 /** Log strutturato: niente console.log nei plugin, l'host decide dove finisce. */
@@ -52,6 +61,14 @@ export interface Ctx {
   runId: string;
   /** Connessione in sola lettura al database logico `name` (I4, I6). */
   db(name: string): ReadOnlyDb;
+  /**
+   * Apre la sorgente indicata da `ref` e ne restituisce i byte.
+   *
+   * E' il core (o l'host) a decidere che cosa sia un `ref`: un path su disco in
+   * sviluppo, una chiave su object storage in produzione. Il reader dice
+   * **quale** sorgente vuole, mai **come** aprirla, e non importa mai `node:fs` (I6).
+   */
+  openInput(ref: string): Promise<ByteStream>;
   /** Risolve un riferimento a un segreto; il plugin non vede mai la credenziale grezza. */
   secretRef(ref: string): string;
   log: Logger;

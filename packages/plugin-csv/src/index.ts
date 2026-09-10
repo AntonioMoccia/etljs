@@ -22,4 +22,3 @@ export const plugin: ReaderPlugin = {
 
 export default plugin;
 export { csvConfigSchema, parseCsvConfig, type CsvConfig } from "./config.js";
-export { parseCsv, type CsvParserOptions } from "./parser.js";

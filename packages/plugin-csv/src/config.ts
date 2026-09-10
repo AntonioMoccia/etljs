@@ -3,21 +3,22 @@ import { configInvalid } from "@etl-js/contracts";
 
 /**
  * Config del reader CSV. Tutto cio' che cambia da cliente a cliente sta qui,
- * come valore: delimitatore, encoding, righe di preambolo (I8).
+ * come valore: delimitatore, encoding, righe di preambolo, nomi di colonna (I8).
  */
 export const csvConfigSchema = z
   .object({
     /**
-     * Percorso del file. E' un dato come gli altri: l'host che riceve un file
-     * nuovo riscrive questo campo prima di chiamare run().
+     * Riferimento alla sorgente, risolto da `ctx.openInput`. In sviluppo e'
+     * un path; in produzione una chiave su object storage. Il reader non lo
+     * interpreta mai da se' (I6).
      */
-    path: z.string().min(1).describe("Percorso del file CSV da leggere"),
+    input: z.string().min(1).describe("Riferimento alla sorgente, risolto dall'host"),
     delimiter: z.string().min(1).max(4).default(",").describe("Separatore di campo"),
     quote: z.string().length(1).default('"').describe("Carattere di quoting"),
     encoding: z
-      .string()
+      .enum(["utf8", "latin1"])
       .default("utf8")
-      .describe("Encoding del file: utf8, latin1, windows-1252, ..."),
+      .describe("Encoding del file; latin1 copre i CSV esportati da gestionali europei"),
     skipRows: z
       .number()
       .int()
@@ -25,15 +26,14 @@ export const csvConfigSchema = z
       .default(0)
       .describe("Righe di preambolo da buttare prima dell'intestazione"),
     header: z
-      .boolean()
+      .union([z.boolean(), z.array(z.string().min(1)).min(1)])
       .default(true)
-      .describe("La prima riga utile contiene i nomi delle colonne"),
-    columns: z
-      .array(z.string().min(1))
-      .optional()
-      .describe("Nomi di colonna espliciti, quando header e' false"),
-    batchSize: z.number().int().min(1).max(100_000).default(1_000),
+      .describe(
+        "true: la prima riga utile porta i nomi. Elenco: nomi espliciti. false: chiavi posizionali c0, c1, ...",
+      ),
     trim: z.boolean().default(true).describe("Toglie gli spazi ai bordi di ogni campo"),
+    batchSize: z.number().int().min(1).max(100_000).default(1_000).describe("Righe per lotto"),
+    bom: z.boolean().default(true).describe("Toglie il BOM iniziale, se presente"),
   })
   .strict();
 

@@ -9,6 +9,7 @@ import {
 } from "@etl-js/contracts";
 import {
   Registry,
+  createFileInput,
   createLoader,
   createPostgresProvider,
   describePlugin,
@@ -25,7 +26,7 @@ import { RejectFile } from "./rejects.js";
 const USAGE = `etl-js - importazione dati guidata da una Definition JSON
 
   etl-js run <definition.json> [opzioni]
-      --input <file>        sovrascrive source.config.path
+      --input <file>        sovrascrive source.config.input
       --dry-run             esegue tutto tranne la scrittura
       --limit <n>           si ferma dopo n righe lette
       --db <nome=url>       connessione per un database logico (ripetibile)
@@ -89,16 +90,23 @@ function parseDbOption(entry: string): [string, string] {
 }
 
 /**
- * Sovrascrive il percorso del file di ingresso. E' una riscrittura del DATO,
- * non un ramo nel motore: la Definition resta un JSON (I1).
+ * Sovrascrive il riferimento alla sorgente. E' una riscrittura del DATO, non un
+ * ramo nel motore: la Definition resta un JSON (I1).
  */
 function withInput(definition: Definition, input: string): Definition {
   const config = (definition.source.config ?? {}) as Record<string, unknown>;
   return {
     ...definition,
-    source: { ...definition.source, config: { ...config, path: input } },
+    source: { ...definition.source, config: { ...config, input } },
   };
 }
+
+/**
+ * La CLI legge dal filesystem, quindi risolve i `ref` come path. Un host che
+ * tiene i file su object storage passa la propria risoluzione e i plugin non
+ * cambiano (I6).
+ */
+const openInput = createFileInput();
 
 function builtinRegistry(): Registry {
   return new Registry().registerAll(builtinPlugins);
@@ -236,6 +244,7 @@ export async function main(argv: string[]): Promise<number> {
   process.once("SIGTERM", onSignal);
 
   const ctx: HostCtx = {
+    openInput,
     db: (name) => {
       if (!provider) {
         throw new IngestError(
@@ -341,6 +350,7 @@ async function previewCommand(args: string[]): Promise<number> {
     definition,
     rows,
     {
+      openInput,
       db: (name) => {
         throw new IngestError(
           `L'anteprima richiede il database "${name}": usa "run --dry-run --db ${name}=<url>"`,

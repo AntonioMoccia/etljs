@@ -103,6 +103,20 @@ test("mette in maiuscolo solo i campi indicati", async () => {
 });
 ```
 
+### Provare un reader
+
+`mockCtx({ inputs })` serve i byte da una stringa: un test di un reader non tocca il disco.
+
+```ts
+const ctx = mockCtx({ inputs: { "piano.csv": "Ordine;Qta\nORD-1;5\n" } });
+
+const batches = [];
+for await (const b of plugin.impl.read({ input: "piano.csv", delimiter: ";" }, ctx)) {
+  batches.push(b);
+}
+expect(batches[0].rows).toEqual([{ Ordine: "ORD-1", Qta: "5" }]);
+```
+
 ### Provare un plugin che legge dal database
 
 `recordingDb` non interpreta SQL: risponde quel che gli dici e registra quel che ha ricevuto. E'
@@ -157,10 +171,16 @@ expect(db.calls).toHaveLength(1);   // il secondo lotto ha usato la cache del ru
 | `recordingLogger()` | logger che ricorda messaggi e campi in `.lines` |
 | `batchOf(rows, meta)` | costruisce un lotto con meta sensati |
 
+`mockCtx` accetta `inputs` per `ctx.openInput`, `databases` per `ctx.db`, `secrets`, `runId`,
+`signal` e `logger`. Chiedere qualcosa che il test non ha dichiarato produce un errore che dice
+esattamente cosa aggiungere, invece di un `undefined` silenzioso.
+
 ## Le regole che un plugin non puo' violare
 
-1. **Non apre connessioni.** Il database arriva da `ctx.db(nome)`, gia' connesso dal core (I6).
-   Le credenziali non le vede: riceve al massimo un riferimento da risolvere con `ctx.secretRef`.
+1. **Non apre nulla da se'.** Il database arriva da `ctx.db(nome)`, i byte della sorgente da
+   `ctx.openInput(ref)`: un reader non importa mai `node:fs`, perche' in produzione il file e' su
+   object storage (I6). Le credenziali non le vede: riceve al massimo un riferimento da risolvere
+   con `ctx.secretRef`.
 2. **Non fa una query per riga.** Un lotto = una interrogazione, con `= ANY($1)` o con una lista di
    tuple parametrizzate (I5).
 3. **Non interpola valori nell'SQL.** I valori sono parametri; gli identificatori passano da

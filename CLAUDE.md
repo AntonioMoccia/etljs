@@ -60,7 +60,7 @@ Grafo consentito: `contracts` <- `core`, `plugin-*`, `cli`, `testing`. I plugin 
 
 ## Contratti
 
-Le firme canoniche stanno in `packages/contracts/src/`. Non inventarne altre. Quattro estensioni deliberate
+Le firme canoniche stanno in `packages/contracts/src/`. Non inventarne altre. Cinque estensioni deliberate
 rispetto alla specifica iniziale, documentate qui perche' non siano riscoperte come "deviazioni":
 
 1. **`WriterCtx extends Ctx`** aggiunge `dbWrite(name): Promise<WriteTransaction>`. `Ctx.db()` resta in
@@ -72,7 +72,13 @@ rispetto alla specifica iniziale, documentate qui perche' non siano riscoperte c
 3. **`Ctx.runId`**: ogni `Batch` deve dichiarare da quale run proviene
    (`Batch.meta.runId`) ed e' il reader a costruire i Batch, quindi il runId deve
    arrivargli dal contesto. `run()` lo genera se l'host non ne fornisce uno.
-4. **`contracts` contiene anche costanti e utility pure** (`PROTOCOL_VERSION`, `IngestError`,
+4. **`Ctx.openInput(ref): Promise<ByteStream>`**: il reader dice **quale** sorgente vuole, mai
+   **come** aprirla. In sviluppo e in CLI il core la risolve come path (`createFileInput`); in
+   produzione l'host la risolve su object storage e il plugin non cambia (I6). `ByteStream` e'
+   `AsyncIterable<Uint8Array>` e non `NodeJS.ReadableStream` per due motivi: quel tipo obbligherebbe
+   `contracts` a dipendere da `@types/node`, e uno `fs.ReadStream` soddisfa gia' la forma povera senza
+   adattatori, insieme a uno stream web o a un iteratore su S3.
+5. **`contracts` contiene anche costanti e utility pure** (`PROTOCOL_VERSION`, `IngestError`,
    `escapeIdentifier`, whitelist operatori), non solo tipi: se stessero in `core` i plugin non
    potrebbero usarle senza violare I9. Restano a zero dipendenze, e dependency-cruiser lo verifica.
 
@@ -84,12 +90,12 @@ rispetto alla specifica iniziale, documentate qui perche' non siano riscoperte c
 | core | `ajv`, `ajv-formats` | il core valida le config contro il JSON Schema del manifest senza conoscere Zod ne' il plugin (I2) |
 | core | `pg`, `pg-copy-streams` (optional) | il core e' l'unico a poter aprire connessioni (I6); import dinamico, cosi' chi non usa Postgres non li installa |
 | plugin-* | `zod` | schema di config tipizzato + derivazione del JSON Schema con `z.toJSONSchema()` (zod v4, nessuna libreria di conversione a parte) |
+| plugin-csv | `csv-parse` | streaming vero e quoting RFC 4180 corretto; il quoting a mano e' pieno di trappole |
 | testing | *nessuna* | l'harness serve a provare i plugin, non puo' tirarsi dietro il core |
 | dev | `typescript`, `vitest`, `dependency-cruiser` | build, test, confini |
 
-Il parsing CSV e' scritto a mano (`plugin-csv/src/parser.ts`): serve streaming vero, delimitatore e
-encoding configurabili e `skipRows`; sono ~150 righe testabili e ci evitano una dipendenza runtime nel
-plugin piu' usato.
+Nota su `plugin-csv`: la dipendenza da Node si ferma a `node:stream` e `node:util`. Il plugin **non
+importa `node:fs`**: i byte glieli da' il core tramite `ctx.openInput` (I6).
 
 ## Dove stanno le decisioni gia' prese
 
@@ -103,6 +109,11 @@ plugin piu' usato.
   coi campi a null e segnala.
 - La soglia `maxFailedRatio` non ha un numero minimo di righe prima di scattare: chi scrive `0.2`
   intende `0.2` anche su un file di tre righe.
+- `createFileInput({ baseDir })`: senza `baseDir` un `ref` che arriva da una Definition puo' leggere
+  qualunque file della macchina. In un host che accetta Definition da fuori, `baseDir` non e' opzionale.
+- Il BOM: `TextDecoder` lo toglie da solo, quindi il reader lo decodifica con `ignoreBOM: true` e
+  decide lui. Cosi' `bom: false` funziona davvero, e si intercetta anche il caso vero, un file
+  salvato UTF-8-BOM ma dichiarato latin1.
 - Le scritture dentro una transazione **non** si ritentano mai: un'istruzione fallita ha gia' abortito
   la transazione. Si ritentano solo letture e connessioni, e solo se l'errore si dichiara `retryable`.
 

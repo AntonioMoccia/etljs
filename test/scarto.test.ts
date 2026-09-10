@@ -10,7 +10,7 @@ import {
   type Row,
   type WriterPlugin,
 } from "@etl-js/contracts";
-import { Registry, run } from "@etl-js/core";
+import { Registry, createFileInput, run } from "@etl-js/core";
 import type { HostCtx } from "@etl-js/core";
 import csv from "@etl-js/plugin-csv";
 import cast from "@etl-js/plugin-cast";
@@ -74,7 +74,7 @@ async function fixture(name: string, total: number, bad: number): Promise<string
 function definitionFor(path: string, maxFailedRatio: number): Definition {
   return {
     client: "acme",
-    source: { type: "csv", config: { path, delimiter: ";" } },
+    source: { type: "csv", config: { input: path, delimiter: ";" } },
     transform: [
       {
         type: "cast",
@@ -110,6 +110,7 @@ function setup(sink: { rows: Row[]; outcome: string[] }) {
 }
 
 const ctx: HostCtx = {
+  openInput: createFileInput(),
   db: () => {
     throw new Error("questo import non usa il database");
   },
@@ -205,7 +206,7 @@ describe("file di scarto della CLI", () => {
       definition,
       JSON.stringify({
         client: "acme",
-        source: { type: "csv", config: { path, delimiter: ";" } },
+        source: { type: "csv", config: { input: path, delimiter: ";" } },
         transform: [
           { type: "cast", config: { Quantita: { number: {} } } },
           { type: "validate", config: { rules: [{ field: "Quantita", min: 1 }] } },
