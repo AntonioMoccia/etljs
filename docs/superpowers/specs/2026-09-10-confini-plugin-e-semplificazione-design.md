@@ -1,56 +1,58 @@
 # Confini dei plugin e semplificazione del motore
 
-Data: 2026-09-10
-Stato: approvato in discussione, da pianificare
+Data: 2026-09-10 (riscritto il 2026-09-11)
+Stato: decisioni approvate, da pianificare
 
-## La domanda
+## In una pagina
 
-Tre domande, che sono la stessa domanda:
+**Che cos'e' etl-js.** Una libreria npm che prende il file di un cliente, lo trasforma e lo scrive
+in una tabella. Non ha stato, non ha file di configurazione, non sa chi sia l'utente. Chi la usa -
+un'applicazione, la CLI, una GUI - le passa connessioni, sorgenti e plugin. Resta un **repo suo,
+pubblicabile**: il progetto piu' grande la installa.
 
-1. **Che cosa copre un plugin?**
-2. **Chi lo sviluppa?**
-3. **Come si riduce la complessita' del motore**, visto che sara' incorporato in un'applicazione
-   piu' grande e affiancato a una GUI che permettera' anche di installare i plugin?
+**Che cosa si decide qui**, in tre gruppi:
 
-Che **chiunque possa scrivere un plugin** e' deciso: e' l'identita' del pacchetto (D0) ed e' cio' che
-D3 e D5 servono a proteggere. Restano invece aperte per scelta due domande diverse: **di chi ci si
-fida** (chi scrive un plugin che gira sul vostro processo: solo il team, integratori noti, o
-chiunque pubblichi su npm) e **dove girera' il motore** (installazione interna, SaaS multi-tenant,
-on-premise). Le decisioni qui sotto sono prese in modo da non richiedere quella risposta oggi e da
-non precluderne nessuna domani - D4 in particolare esiste per questo.
+| | |
+|---|---|
+| **Chi mantiene che cosa** | reader e writer sono liste corte che si chiudono da sole; i transformer no, quindi la libreria standard si chiude a sette e il resto lo scrive chi ha il problema |
+| **Come i plugin arrivano al motore** | un plugin e' un oggetto, fornibile in tre modi; il motore non se li cerca da solo; un meta-pacchetto per chi vuole tutto pronto |
+| **Che cosa si toglie** | i transformer diventano sessioni per run (unica cosa urgente, cambia il protocollo); via `secretRef`, `capabilities`, `category`; `createHostCtx` |
+
+**Che cosa resta fuori**: autenticazione e ruoli (nell'ospite), chi puo' scrivere dove (nei `GRANT`
+di Postgres), le Definition (nel progetto ospite), la GUI (un progetto a se').
+
+**Due incognite restano aperte per scelta** - di chi ci si fida e dove girera' il motore - e le
+decisioni qui sotto sono prese in modo da non richiedere quella risposta oggi.
 
 ---
 
-## D0 - Che cos'e' questo pacchetto
+## Che cos'e' questo pacchetto
 
-Una **libreria installabile in un altro progetto**, **sempre estendibile tramite plugin**, e
-**utilizzabile anche tramite una GUI se l'utente lo vuole**.
+Tre affermazioni, tutte vincolanti:
 
-Le tre parti non sono descrittive, sono vincolanti:
-
-- **installabile in un altro progetto**: l'ospite comanda. Il motore non apre connessioni, non
+- **Installabile in un altro progetto.** L'ospite comanda: il motore non apre connessioni, non
   decide dove stanno i file, non pianifica, non ricorda. Gia' vero (I6), qui confermato.
-- **sempre estendibile**: l'estendibilita' e' una proprieta' del prodotto, non una comodita'. Ne
-  discende D3 (se la libreria standard cresce su richiesta, "estendere" diventa "aspettare che lo
-  aggiungano loro") e ne discende l'urgenza di D5 (un protocollo si aggiusta finche' nessuno lo usa
-  da fuori).
-- **GUI se l'utente vuole**: la GUI non e' un plugin e non e' un accessorio. E' un **ospite** nel
-  senso tecnico - chi *contiene* il motore - e nello scenario piu' probabile e' addirittura **il
-  prodotto**, con etl-js come suo motore interno. Ne discende D4: se fosse il motore a caricare da
-  se' i plugin, la GUI che "installa i plugin" starebbe combattendo con lui invece di decidere.
+- **Sempre estendibile.** L'estendibilita' e' una proprieta' del prodotto, non una comodita'. Da
+  qui discendono la chiusura della libreria standard (se cresce su richiesta, "estendere" diventa
+  "aspettare che lo aggiungano loro") e l'urgenza del cambio di protocollo (un protocollo si
+  aggiusta finche' nessuno lo usa da fuori).
+- **GUI se l'utente vuole.** La GUI non e' un plugin ne' un accessorio: e' un **ospite**, cioe' chi
+  *contiene* il motore, e nello scenario piu' probabile e' il prodotto, con etl-js come suo motore.
 
-Gli ospiti sono almeno tre - un'applicazione che incorpora la libreria, la CLI, una GUI - e nessuno
-e' privilegiato. La cerniera e' sempre la stessa: **l'ospite costruisce il `Ctx` e consegna i
-plugin, il motore esegue.**
+Gli ospiti sono almeno tre - un'applicazione, la CLI, una GUI - e nessuno e' privilegiato. La
+cerniera e' sempre la stessa: **l'ospite costruisce il `Ctx` e consegna i plugin, il motore esegue.**
 
-**Dove vive:** etl-js resta un **repo suo, pubblicabile su npm**. Il progetto piu' grande - quello
-che avra' autenticazione, autorizzazioni, GUI - lo installa come una dipendenza qualunque. Non e'
-una preferenza organizzativa: e' l'unica forma in cui "importabile in qualsiasi progetto" e' vera
-**per costruzione**. Un pacchetto che non puo' vedere il progetto grande non puo' esserne
-contaminato, e il fallimento tipico di questo scenario - il prodotto che colonizza pian piano la
-libreria finche' nessun altro puo' piu' usarla - diventa impossibile invece che sconsigliato.
+**Dove vive:** un repo suo, pubblicato su npm; il progetto con autenticazione e GUI lo installa come
+qualunque dipendenza. Non e' una preferenza organizzativa: e' l'unica forma in cui "importabile in
+qualsiasi progetto" e' vera *per costruzione*. Un pacchetto che non puo' vedere il progetto grande
+non puo' esserne contaminato, e il fallimento tipico - il prodotto che colonizza la libreria finche'
+nessun altro puo' piu' usarla - diventa impossibile invece che sconsigliato.
 
-## D1 - La regola di copertura
+---
+
+# A. Chi mantiene che cosa
+
+## A1 - La regola di copertura
 
 | | Copre | Varia con |
 |---|---|---|
@@ -61,24 +63,24 @@ libreria finche' nessun altro puo' piu' usarla - diventa impossibile invece che 
 E' la regola gia' implicita in I1/I2/I6: qui viene scritta perche' sia applicabile a una richiesta
 nuova senza doverla dedurre ogni volta.
 
-## D2 - Reader e writer sono liste chiuse: non serve limitarli
+## A2 - Reader e writer non hanno bisogno di regole
 
 **Un reader copre solo il formato**, mai la provenienza: aprire la sorgente e' gia' compito
 dell'host via `ctx.openInput`. Se un cliente passa da FTP a S3, nessun plugin cambia. Un reader
-nuovo serve solo per un *formato* nuovo, e i formati al mondo sono pochi: `csv`, `excel`,
-`json/ndjson`, `xml`, tracciato a lunghezza fissa.
+nuovo serve solo per un *formato* nuovo, e i formati sono pochi: `csv`, `excel`, `json/ndjson`,
+`xml`, tracciato a lunghezza fissa.
 
 **Un writer copre destinazione e strategia**: `postgres`, `mysql`, `sqlserver`, eventualmente
-`file`. Anche questa lista si chiude da sola.
+`file`.
 
-Conseguenza: **nessuna regola d'ammissione serve per reader e writer.** Un reader o un writer nuovo
-si aggiunge quando un caso reale lo richiede, senza doverlo giustificare contro una regola: la lista
-si esaurisce da sola. Il problema di catalogo esiste solo per i transformer.
+Entrambe le liste si esauriscono da sole: se ne aggiunge uno quando un caso reale lo richiede,
+senza doverlo giustificare contro nessuna regola. **Il problema di catalogo esiste solo per i
+transformer.**
 
-## D3 - La libreria standard dei transformer e' chiusa
+## A3 - La libreria standard dei transformer si chiude a sette
 
-La libreria standard e' **finita**: `cast`, `filter`, `default`, `rename`, `validate`, `lookup`,
-piu' `dedup` (vedi D3.1). Non cresce su richiesta.
+`cast`, `filter`, `default`, `rename`, `validate`, `lookup`, piu' `dedup` (A4). Non cresce su
+richiesta.
 
 **Regola d'ammissione**, da scrivere in `CLAUDE.md`:
 
@@ -86,55 +88,121 @@ piu' `dedup` (vedi D3.1). Non cresce su richiesta.
 > che **non nomina nessun dominio**. Tutto il resto e' un plugin che vive nel repo di chi ne ha
 > bisogno.
 
-La risposta a "chi sviluppa i plugin" discende da qui: **la libreria standard il team, il lungo
-periodo chiunque abbia il problema.** Il costo di manutenzione del progetto resta finito e noto.
+Da qui la risposta a "chi sviluppa i plugin": **la libreria standard il team, tutto il resto chi ha
+il problema.** Il costo di manutenzione del progetto resta finito e noto.
 
-La regola regge solo se scrivere un plugin resta facile: ~60 righe e un `npm install`. Ogni
-decisione successiva in questo documento e' compatibile con quel vincolo, e due lo migliorano
-(D6, D7: due concetti in meno da spiegare nel tutorial).
+La regola regge solo se scrivere un plugin resta facile - vedi B2, che lo rende un file senza
+dipendenze.
 
-### D3.1 - `dedup` entra, con `keep: "first"`
+## A4 - `dedup` entra, con `keep: "first"`
 
-Serve a tutti (non a un cliente) e chiude un difetto reale: `upsert` con la stessa chiave due volte
-nello stesso file fa fallire l'intero run con *"ON CONFLICT DO UPDATE command cannot affect row a
-second time"*, e un CSV di gestionale con una riga esportata due volte e' la norma.
+Serve a tutti e chiude un difetto reale: `upsert` con la stessa chiave due volte nello stesso file
+fa fallire l'intero run con *"ON CONFLICT DO UPDATE command cannot affect row a second time"*, e un
+CSV di gestionale con una riga esportata due volte e' la norma.
 
-Tiene la **prima** occorrenza, non l'ultima: "prima" e' in streaming, "ultima" richiederebbe di
-tenere tutto il file in memoria. Chi ha bisogno che vinca l'ultima riga usa la strategia
-`replace-by`, che cancella e reinserisce e quindi tollera i duplicati per costruzione.
+Tiene la **prima** occorrenza: "prima" e' in streaming, "ultima" richiederebbe tutto il file in
+memoria. Chi ha bisogno che vinca l'ultima riga usa la strategia `replace-by`, che cancella e
+reinserisce e quindi tollera i duplicati per costruzione.
 
-## D4 - Il motore non carica codice
+---
 
-Oggi il core, davanti a `"type": "beta-codici"`, va a cercare su npm `@etl-js/plugin-beta-codici` e
-lo importa: **decide di eseguire codice in base a una stringa che sta in un file di
-configurazione.** In un'installazione interna non e' un problema; in un SaaS multi-tenant lo e'.
+# B. Come i plugin arrivano al motore
+
+## B1 - Un plugin e' un oggetto, non un pacchetto
+
+`Plugin` e' `{ manifest, impl }`. La sensazione che "un plugin = un pacchetto npm" nasce solo dal
+fatto che oggi l'unico modo di caricarne uno per nome passa dal loader npm. Tolto quel loader dal
+motore (B3), la convenzione npm diventa **una strategia di caricamento fra tre**:
+
+| Modo | Cerimonia | Per chi |
+|---|---|---|
+| **Registrazione diretta**: l'ospite importa l'oggetto e chiama `registry.register(plugin)` | zero, funziona gia' oggi | un'applicazione che incorpora etl-js e ha i propri transformer di dominio |
+| **Da una cartella**: il loader importa i `.js` da una cartella indicata dall'ospite | un file, nessun package.json | il plugin custom di un cliente; la GUI che li fa "installare" |
+| **Da npm**: come oggi | package.json, versione, pubblicazione | plugin destinati a essere condivisi e versionati |
+
+## B2 - Un plugin custom e' un file senza dipendenze
+
+**Il core valida gia' la config per conto del plugin**: se il manifest porta un JSON Schema,
+`validate()` lo compila con Ajv e controlla la Definition prima che il run parta. Zod, nei plugin
+standard, serve a *derivare* quello schema, non e' un obbligo.
+
+Un transformer custom completo e' quindi un file, senza dipendenze e senza build: un `manifest` con
+un JSON Schema scritto a mano e un `impl.open` che restituisce un oggetto con `transform`. Una
+ventina di righe. Va in `docs/scrivere-un-plugin.md` con l'esempio completo, perche' e' la prova che
+"sempre estendibile" non e' uno slogan.
+
+## B3 - Il motore non carica codice
+
+Oggi il core, davanti a `"type": "beta-codici"`, cerca su npm `@etl-js/plugin-beta-codici` e lo
+importa: **decide di eseguire codice in base a una stringa che sta in un file di configurazione.**
 
 `loadPlugin`, `loadPluginPackage`, `createLoader`, `candidateSpecifiers`, `DEFAULT_PREFIXES` e il
-tipo `PluginModule` **escono dal core** e vanno in un pacchetto proprio, **`@etl-js/loader`**, che
-dipende da `core` e `contracts`. Il core tiene `Registry` e il tipo `PluginResolver`, e riceve i
-plugin gia' pronti.
+tipo `PluginModule` escono dal core e vanno in **`@etl-js/loader`**, pacchetto proprio che dipende
+da `core` e `contracts`. Il core tiene `Registry` e il tipo `PluginResolver`, e riceve i plugin gia'
+pronti.
 
-Un pacchetto proprio e non `@etl-js/cli`: per D0 la GUI e' un ospite alla pari, e con il loader
-dentro la CLI una **interfaccia grafica dovrebbe dipendere da una interfaccia a riga di comando**
-per poter installare un plugin. CLI e GUI lo usano entrambe alla pari; chi incorpora la libreria in
-un'applicazione che i plugin li conosce gia' non lo installa affatto. E' anche cio' che rende D4 un
-fatto invece di una promessa: "il motore non carica codice" diventa vero **strutturalmente**, perche'
-il codice che carica codice sta in un pacchetto che devi installare apposta.
+Un pacchetto proprio e non `@etl-js/cli`: la GUI e' un ospite alla pari, e con il loader dentro la
+CLI **una interfaccia grafica dipenderebbe da una interfaccia a riga di comando** per installare un
+plugin. Ed e' cio' che rende la promessa un fatto: "il motore non carica codice" diventa vero
+strutturalmente, perche' il codice che carica codice sta in un pacchetto che devi installare
+apposta.
 
 Tre guadagni:
 
-- il modello di fiducia diventa una scelta di **chi installa**: la GUI passa tutto (interno), solo
-  gli approvati per quel cliente (SaaS), o un bundle fisso (on-premise). **La decisione rimandata
-  resta rimandabile.**
-- `core` smette di contenere un `import()` dinamico, che e' un fastidio concreto per chiunque
-  impacchetti la GUI con Vite o webpack;
+- il modello di fiducia diventa una scelta di **chi installa** - tutto (interno), solo gli approvati
+  per quel cliente (SaaS), un bundle fisso (on-premise): **la decisione rimandata resta
+  rimandabile**;
+- `core` smette di contenere un `import()` dinamico, fastidio concreto per chi impacchetta la GUI
+  con Vite o webpack;
 - la GUI che "installa i plugin" ha un posto naturale dove farlo, fuori dal motore.
 
-## D5 - I transformer diventano sessioni per run
+### B3.1 - Caricamento da cartella
+
+In `@etl-js/loader`: `createDirectoryLoader({ dir })` restituisce un `PluginResolver` che risolve un
+nome logico in `<dir>/<nome>.js` (o `<dir>/<nome>/index.js`), piu' `scanDirectory(dir)` per
+elencare cio' che c'e' - la GUI ne ha bisogno per mostrare i plugin disponibili.
+
+**Il nome arriva da una Definition, quindi va trattato come ostile**: si rifiuta qualunque nome che
+contenga `/`, `\` o `..`, e il percorso risolto deve restare dentro `dir`. Stessa classe di bug da
+cui `createFileInput({ baseDir })` gia' difende, stessa difesa.
+
+E una nota da scrivere una volta in `docs/` e non ripetere: caricare un file **e' eseguire codice
+arbitrario** nel processo dell'ospite. In un'installazione interna e' normale amministrazione; in un
+SaaS decide l'ospite se un tenant possa caricare codice. E' la decisione che B3 ha gia' messo nelle
+mani giuste: qui si documenta, non si aggiunge nessun meccanismo.
+
+## B4 - Un meta-pacchetto `etl-js` come porta d'ingresso
+
+Oggi incorporare etl-js significa installare `core`, `plugin-csv`, `plugin-postgres`,
+`plugin-transforms`, `plugin-lookup` e sapere come assemblarli. La modularita' e' giusta, ma non
+deve essere **l'unico** modo di entrare.
+
+Nasce `packages/etl-js/`: dipende dal core e dai plugin standard, ri-esporta `run`, `preview`,
+`validate`, `createHostCtx` e offre una `Registry` gia' popolata. `npm i etl-js`, un import, e si
+parte. I pacchetti granulari restano per chi vuole solo il reader CSV.
+
+Diventa anche **l'unico punto del progetto in cui dei plugin concreti sono nominati** - ruolo che
+oggi ha `packages/cli/src/builtins.ts`, che sparisce: la CLI dipendera' dal meta-pacchetto. Un posto
+solo invece di due che possono divergere.
+
+Due dettagli pratici, non rimandabili:
+
+- il pacchetto **privato di radice si chiama gia' `etl-js`**: va rinominato (per esempio
+  `etl-js-monorepo`, non viene mai pubblicato) perche' il nome resti libero;
+- la disponibilita' del nome `etl-js` su npm va verificata prima di impegnarcisi.
+
+Le regole di dependency-cruiser si estendono: `core` non deve dipendere ne' da `loader` ne' da
+`etl-js`, come gia' non dipende dai plugin e dalla CLI.
+
+---
+
+# C. Che cosa si toglie
+
+## C1 - I transformer diventano sessioni per run *(l'unica urgente)*
 
 Oggi un transformer e' un oggetto unico e globale. Lo stato che due plugin devono ricordare fra un
-lotto e l'altro (`lookup`: le chiavi gia' cercate; `validate`: i valori gia' visti) finisce quindi in
-variabili di modulo, e attorno a quelle sono cresciuti cinque epicicli:
+lotto e l'altro (`lookup`: le chiavi gia' cercate; `validate`: i valori gia' visti) finisce quindi
+in variabili di modulo, e attorno a quelle sono cresciuti cinque epicicli:
 
 - `createRunCache` in `contracts`, con LRU sugli ultimi 8 run per non perdere memoria;
 - `configId()` in `lookup`, chiave costruita con `JSON.stringify` perche' due `lookup` nella stessa
@@ -159,83 +227,72 @@ export interface Transformer {
 
 Conseguenze:
 
-- la config si valida **una volta**, in `open`, e quindi anche **prima della prima riga letta**;
+- la config si valida **una volta**, in `open`, quindi anche **prima della prima riga letta**;
 - la cache di `lookup` e' un campo dell'oggetto: niente LRU, niente prefissi, nessuna perdita di
   memoria possibile, due `lookup` nella stessa Definition indipendenti per costruzione;
 - `flush()` significa una cosa sola;
-- niente `close()`: la sessione muore quando il run la lascia andare. Se un giorno un transformer
-  terra' una risorsa, si aggiungera' allora.
+- niente `close()`: la sessione muore quando il run la lascia andare;
 - i tre tipi diventano simmetrici e spiegabili in una riga: reader = un generatore per run,
   transformer = una sessione per run, writer = una sessione per run.
 
-`Reader` **non** cambia: `read(config, ctx)` restituisce gia' un iterabile per run, e il suo stato
-vive nel generatore.
+`Reader` **non** cambia: `read(config, ctx)` restituisce gia' un iterabile per run.
 
-`flush()` **resta nel protocollo** pur non avendo oggi un utente reale, e per un motivo preciso: D3
+`flush()` **resta nel protocollo** pur non avendo oggi un utente reale, e per un motivo preciso: A3
 sposta fuori dal repo i transformer non standard, e il caso "raggruppa le righe figlie sotto la
 testata" e' plausibile in questo dominio e impossibile senza `flush`. Toglierlo chiuderebbe la porta
-proprio a chi abbiamo appena deciso di incoraggiare.
+proprio a chi si e' deciso di incoraggiare.
 
-**Costo:** `PROTOCOL_VERSION` passa a 2, e cambiano i 6 transformer, `pipeline.ts`, l'harness di
-test e la documentazione. **Va fatto per primo**: e' l'unica decisione irreversibile del documento,
-perche' dal primo plugin scritto fuori dal repo in poi il protocollo non si cambia piu'.
+**Costo:** `PROTOCOL_VERSION` passa a 2; cambiano i 6 transformer, `pipeline.ts`, l'harness e la
+documentazione. **Va fatto per primo**: e' l'unica decisione irreversibile del documento, perche'
+dal primo plugin scritto fuori dal repo in poi il protocollo non si cambia piu'. Non serve nessuna
+finestra di compatibilita': oggi quel plugin non esiste.
 
-## D6 - Via `ctx.secretRef`
+## C2 - Via `ctx.secretRef`
 
 Nessun plugin lo usa: lo implementano host e test, e il core si limita a ripassarlo. Toglierlo non
 indebolisce I6, lo **rafforza** - il plugin non vede credenziali ne' in chiaro ne' per riferimento.
-Se un domani servira' (un plugin che chiama un'API con una chiave), si rimette.
+Se un domani servira', si rimette.
 
-## D7 - Via `Manifest.capabilities` e `Manifest.category`
+## C3 - Via `Manifest.capabilities` e `Manifest.category`
 
-Scritti da otto plugin, letti da nessuno, validati da nessuno. La GUI non esiste ancora: quando
-esistera' sapra' dire che cosa le serve per raggruppare i plugin, e un elenco chiuso deciso allora
-sara' migliore di uno inventato oggi al buio. Intanto sono due campi che ogni autore di plugin
-compila senza sapere perche'.
+Scritti da otto plugin, letti da nessuno, validati da nessuno. Quando la GUI esistera' sapra' dire
+che cosa le serve per raggruppare i plugin, e un elenco chiuso deciso allora sara' migliore di uno
+inventato oggi al buio. Intanto sono due campi che ogni autore compila senza sapere perche' - e per
+B2 ogni campo inutile nel manifest e' una domanda in piu' nel tutorial.
 
-## D8 - La GUI si costruisce sopra `preview()`
+## C4 - `createHostCtx`: incorporare deve costare cinque righe, non venticinque
 
-Il `configSchema` del manifest permette alla GUI di disegnare il form di ogni stadio, ma **non le
-dice quali campi della riga esistono all'ingresso di quello stadio**: non puo' offrire un menu con
-`ordine_cliente, data_consegna, quantita`.
+Costruire un `HostCtx` richiede oggi ~25 righe, e la CLI le scrive **due volte** - in `run` e in
+`preview` - con comportamenti leggermente diversi. C2 ne toglie gia' una, lasciando quattro campi:
+`openInput`, `db`, `log`, `signal`, piu' `dbWrite` se si scrive.
 
-Si sceglie **`preview()`**: la GUI chiede un file d'esempio e mostra i campi veri, stadio per stadio.
-Empirico, gia' implementato, zero aggiunte al protocollo.
+```ts
+export function createHostCtx(options: {
+  databases?: Record<string, PostgresDbConfig>;
+  baseDir?: string;
+  log?: Logger;
+  signal?: AbortSignal;
+}): Promise<{ ctx: HostCtx; close(): Promise<void> }>;
+```
 
-**Come**, in concreto: per sapere che campi entrano nello stadio *k*, la GUI chiama `preview()` su
-una Definition con i **primi k-1** transformer. Il risultato e' provatamente lo stesso che darebbe il
-run intero, perche' i transformer sono side-effect free (I4): rieseguire i primi stadi sulle stesse
-righe non puo' dare un esito diverso. **E' I4 a rendere possibile questa GUI**, non solo
-l'idempotenza dei run.
-
-Il costo e' trascurabile e vale la pena dirlo, perche' a occhio sembra alto: `preview` si ferma al
-**primo lotto** che raggiunge `limitRows`, quindi sei chiamate su un campione di venti righe sono
-sei letture di un lotto, non sei letture del file.
-
-**Via d'uscita, se un giorno servisse:** un evento `onStepBatch` emesso da `pipeline.ts` dopo ogni
-transformer, e un campo per stadio nel `PreviewResult`. Sono poche righe e - cosa che qui conta -
-**non e' un cambio di protocollo**: `RunEvents` e' rivolto all'host, non ai plugin, quindi si puo'
-aggiungere in qualsiasi momento senza rompere nessun plugin esistente. Non si fa ora perche'
-sarebbe API costruita per un consumatore che non esiste ancora e non puo' essere intervistato -
-lo stesso motivo per cui D6 e D7 tolgono roba.
-
-Gli **scarti** sono gia' attribuiti per stadio: `onRecordFailed` porta il campo `step`. Il buco
-riguarda solo le righe sopravvissute.
-
-Si **scarta** l'alternativa (dichiarare i campi in uscita nel manifest): sarebbe lavoro su ogni
-plugin e non potrebbe mai essere accurato, perche' i campi di `rename` dipendono dalla config e
-quelli di `lookup` dal database.
+Nessun accoppiamento nuovo: `createFileInput` e `createPostgresProvider` stanno gia' nel core. Ed e'
+**solo** una comodita': costruire il `Ctx` a mano resta pienamente supportato, ed e' quello che fara'
+ogni ospite con un proprio pool, un proprio object storage o una propria politica di autorizzazione.
+La comodita' non deve diventare la via benedetta, altrimenti riporta dentro il motore le decisioni
+che I6 tiene fuori.
 
 ---
 
-## D9 - Autenticazione e autorizzazione stanno fuori, tranne un punto
+# D. Che cosa resta fuori
 
-Il progetto piu' grande avra' utenti, ruoli e permessi. Il motore no. Ma l'autorizzazione tocca
-quattro superfici, e conviene sapere dove si applica ciascuna:
+## D1 - Autenticazione e autorizzazione
+
+Il progetto piu' grande avra' utenti, ruoli e permessi. Il motore no. L'autorizzazione tocca quattro
+superfici:
 
 | Cosa si autorizza | Dove si applica | Stato |
 |---|---|---|
-| quali plugin puo' usare un utente | la `Registry` che l'ospite consegna | coperto da D4 |
+| quali plugin puo' usare un utente | la `Registry` che l'ospite consegna | coperto da B3 |
 | quali database logici puo' raggiungere | `ctx.db(name)`: e' l'ospite a mappare i nomi logici | coperto da I6 |
 | quali file puo' leggere | `ctx.openInput` + `createFileInput({ baseDir })` | coperto |
 | **su quale tabella puo' scrivere** | **niente glielo impedisce** | vedi sotto |
@@ -252,11 +309,11 @@ resto, esattamente come oggi rifiuta le scritture dei transformer con
 posto che non si puo' aggirare.
 
 L'ospite **puo'** leggere `definition.destination.config.table` per dare un errore comprensibile
-prima di far partire il run: e' cortesia verso l'utente, non sicurezza, e va scritto cosi' perche'
-nessuno lo scambi per un controllo.
+prima di partire: e' cortesia verso l'utente, non sicurezza, e va scritto cosi' perche' nessuno lo
+scambi per un controllo.
 
 **Tracciabilita':** "chi ha caricato che cosa" e' gia' rispondibile senza che il motore sappia chi
-sia un utente. L'ospite genera il `runId`, lo passa in `Ctx`, e il transformer `default` con
+sia un utente. L'ospite genera il `runId` e lo passa nel `Ctx`; il transformer `default` con
 `fromMeta` lo scrive dentro ogni riga insieme al file di origine e al numero di riga. All'ospite
 basta ricordare la coppia runId -> utente.
 
@@ -267,79 +324,10 @@ basta ricordare la coppia runId -> utente.
 > sbagliato: va spostata nell'ospite, nella `Registry`, nel `Ctx` o nei `GRANT`.
 
 Da aggiungere alla tabella degli invarianti in `CLAUDE.md`. A differenza di I2 e I9 non e'
-verificabile da dependency-cruiser: la difesa strutturale e' che etl-js sta in un repo suo e non
-puo' importare nulla dal progetto grande (D0). Il resto e' revisione del codice.
+verificabile da dependency-cruiser: la difesa strutturale e' che etl-js sta in un repo suo e non puo'
+importare nulla dal progetto grande. Il resto e' revisione del codice.
 
-## D10 - Incorporare etl-js deve costare cinque righe, non venticinque
-
-"Importabile in qualsiasi progetto" oggi e' vero ma caro: costruire un `HostCtx` richiede ~25 righe
-di impalcatura, e la CLI le scrive **due volte** - in `run` e in `preview` - con comportamenti
-leggermente diversi fra le due. D6 ne toglie gia' una (`secretRef`), lasciando quattro campi:
-`openInput`, `db`, `log`, `signal`, piu' `dbWrite` se si scrive.
-
-Si aggiunge al core una comodita':
-
-```ts
-export function createHostCtx(options: {
-  databases?: Record<string, PostgresDbConfig>;
-  baseDir?: string;
-  log?: Logger;
-  signal?: AbortSignal;
-}): Promise<{ ctx: HostCtx; close(): Promise<void> }>;
-```
-
-Non introduce accoppiamenti nuovi: `createFileInput` e `createPostgresProvider` stanno gia' nel
-core. Ed e' **solo** una comodita': resta pienamente supportato costruire il `Ctx` a mano, ed e'
-quello che fara' ogni ospite con un proprio pool, un proprio object storage o una propria politica
-di autorizzazione (D9). La comodita' non deve diventare la via benedetta, altrimenti riporta dentro
-il motore le decisioni che I6 tiene fuori.
-
-Beneficio collaterale: la CLI smette di avere due costruzioni del contesto che possono divergere.
-
-## D11 - Un plugin e' un oggetto, non un pacchetto: tre modi di fornirlo
-
-`Plugin` e' `{ manifest, impl }`. La sensazione che "un plugin = un pacchetto npm con package.json"
-nasce solo dal fatto che oggi l'unico modo di caricarne uno per nome passa dal loader npm. Tolto il
-loader dal motore (D4), la convenzione npm diventa **una strategia di caricamento fra le tre**, non
-una regola del sistema:
-
-| Modo | Cerimonia | Per chi |
-|---|---|---|
-| **Registrazione diretta**: l'ospite importa l'oggetto e chiama `registry.register(plugin)` | zero, funziona gia' oggi | un'applicazione che incorpora etl-js e ha i propri transformer di dominio |
-| **Da una cartella**: il loader importa i `.js` da una cartella indicata dall'ospite | un file, nessun package.json | il plugin custom di un cliente; la GUI che li fa "installare" |
-| **Da npm**: come oggi | package.json, versione, pubblicazione | plugin destinati a essere condivisi e versionati |
-
-### D11.1 - Il caricamento da cartella
-
-In `@etl-js/loader`: `createDirectoryLoader({ dir })` restituisce un `PluginResolver` che risolve un
-nome logico in `<dir>/<nome>.js` (o `<dir>/<nome>/index.js`), piu' `scanDirectory(dir)` per
-elencare cio' che c'e' - la GUI ne ha bisogno per mostrare i plugin disponibili.
-
-**Il nome arriva da una Definition, quindi va trattato come ostile**: si rifiuta qualunque nome che
-contenga `/`, `\` o `..`, e il percorso risolto deve restare dentro `dir`. E' la stessa classe di
-bug da cui `createFileInput({ baseDir })` gia' difende, e la stessa difesa.
-
-### D11.2 - Un plugin custom non ha dipendenze
-
-Vale la pena scriverlo in `docs/scrivere-un-plugin.md` con l'esempio completo, perche' e' la prova
-che "sempre estendibile" (D0) non e' uno slogan: **il core valida gia' la config per conto del
-plugin.** Se il manifest porta un JSON Schema, `validate()` lo compila con Ajv e controlla la
-Definition prima che il run parta. Zod, nei plugin standard, serve a *derivare* quello schema, non
-e' un obbligo.
-
-Un transformer custom completo e' quindi un file, senza dipendenze e senza build: `manifest` con un
-JSON Schema scritto a mano, e un `impl.open` che restituisce un oggetto con `transform`. Una
-ventina di righe.
-
-### D11.3 - Caricare un file e' eseguire codice
-
-Da scrivere una volta in `docs/` e non ripetere: caricare un plugin da una cartella significa
-eseguire codice arbitrario nel processo dell'ospite. In un'installazione interna e' normale
-amministrazione; in un SaaS decide l'ospite se un tenant possa caricare codice o se i plugin custom
-li installi solo un amministratore. E' la decisione che D4 ha gia' messo nelle mani giuste: qui si
-documenta, non si aggiunge nessun meccanismo.
-
-## D12 - etl-js non ha file di configurazione
+## D2 - etl-js non ha file di configurazione
 
 Domanda inevitabile quando si installa da npm: "dove metto i file di configurazione?". Risposta:
 **non ce ne sono.** Niente `.etlrc`, niente da copiare dopo l'install, niente da leggere da
@@ -350,45 +338,46 @@ Domanda inevitabile quando si installa da npm: "dove metto i file di configurazi
   database della GUI, un file nel repo dell'app, un oggetto su object storage. Solo la CLI la legge
   da un file, perche' una CLI deve pur prendere un argomento.
 - Le **credenziali** non le vede mai (I6): le mette l'ospite nel `Ctx`.
-- L'**elenco dei plugin** e' la `Registry` che costruisce l'ospite (D4, D11).
+- L'**elenco dei plugin** e' la `Registry` che costruisce l'ospite.
 
-E' cio' che "libreria senza stato" significa gia' in `CLAUDE.md`, detto in modo utilizzabile.
+E' cio' che "libreria senza stato" gia' significa in `CLAUDE.md`, detto in modo utilizzabile.
 
-**Corollario da scrivere accanto a I8:** le Definition sono la cosa che diventa venti file quando i
-clienti sono venti. Stanno nel progetto ospite, **mai** dentro il pacchetto. `examples/` resta
-quello che e' - esempi - e non deve mai diventare la casa delle configurazioni vere.
+**Corollario da scrivere accanto a I8:** le Definition diventano venti file quando i clienti sono
+venti. Stanno nel progetto ospite, **mai** dentro il pacchetto. `examples/` resta quello che e'.
 
-## D13 - Un meta-pacchetto `etl-js` come porta d'ingresso
+## D3 - La GUI si costruisce sopra `preview()`
 
-Oggi incorporare etl-js significa installare `core`, `plugin-csv`, `plugin-postgres`,
-`plugin-transforms`, `plugin-lookup` e sapere come assemblarli. La modularita' e' giusta, ma non
-deve essere **l'unico** modo di entrare.
+Il `configSchema` permette alla GUI di disegnare il form di ogni stadio, ma **non le dice quali
+campi della riga esistono all'ingresso di quello stadio**: non puo' offrire un menu con
+`ordine_cliente, data_consegna, quantita`.
 
-Nasce `packages/etl-js/`: dipende dal core e dai plugin standard, ri-esporta `run`, `preview`,
-`validate`, `createHostCtx` e offre una `Registry` gia' popolata. `npm i etl-js`, un import, e si
-parte. I pacchetti granulari restano per chi vuole solo il reader CSV.
+Si sceglie **`preview()`**: per sapere che campi entrano nello stadio *k*, la GUI chiama `preview()`
+su una Definition con i **primi k-1** transformer. Il risultato e' provatamente identico a quello
+del run intero, perche' i transformer sono side-effect free (I4): rieseguire i primi stadi sulle
+stesse righe non puo' dare un esito diverso. **E' I4 a rendere possibile questa GUI**, non solo
+l'idempotenza dei run.
 
-Diventa anche **l'unico punto del progetto in cui dei plugin concreti sono nominati** - ruolo che
-oggi ha `packages/cli/src/builtins.ts`, che infatti sparisce: la CLI dipendera' dal meta-pacchetto.
-Un posto solo invece di due che possono divergere.
+Il costo e' trascurabile e va detto perche' a occhio sembra alto: `preview` si ferma al **primo
+lotto** che raggiunge `limitRows`, quindi sei chiamate su un campione di venti righe sono sei
+letture di un lotto, non sei letture del file.
 
-Due dettagli pratici, non rimandabili:
+**Via d'uscita, se un giorno servisse:** un evento `onStepBatch` emesso da `pipeline.ts` dopo ogni
+transformer. Sono poche righe e **non e' un cambio di protocollo** - `RunEvents` guarda l'host, non
+i plugin - quindi si aggiunge in qualsiasi momento. Non si fa ora perche' sarebbe API costruita per
+un consumatore che non esiste ancora: lo stesso motivo per cui C2 e C3 tolgono roba.
 
-- il pacchetto **privato di radice si chiama gia' `etl-js`**: va rinominato (per esempio
-  `etl-js-monorepo`, non viene mai pubblicato) perche' il nome resti libero per il meta-pacchetto;
-- la disponibilita' del nome `etl-js` su npm va verificata prima di impegnarcisi.
+Gli **scarti** sono gia' attribuiti per stadio: `onRecordFailed` porta il campo `step`. Il buco
+riguarda solo le righe sopravvissute.
 
-Le regole di dependency-cruiser vanno estese: `core` non deve dipendere ne' da `loader` ne' da
-`etl-js`, esattamente come gia' non dipende dai plugin e dalla CLI.
+---
 
 ## Cosa non cambia
 
-- I nove invarianti, tutti. D4 e D6 rafforzano I6; D5 non tocca I4 (la sessione riceve un `Ctx` in
-  sola lettura come oggi). D9 ne **aggiunge** uno, I10.
+- I nove invarianti, tutti. B3 e C2 rafforzano I6; C1 non tocca I4. D1 ne **aggiunge** uno, I10.
 - I sette pacchetti esistenti: sono unita' di distribuzione, e chi vuole `plugin-csv` non deve
-  tirarsi dietro Postgres. **Nessuno viene fuso.** Se ne aggiungono due, e per motivi opposti fra
-  loro: `loader` (D4) per tenere **fuori** dal motore il codice che carica codice, `etl-js` (D13)
-  per dare una porta d'ingresso a chi non vuole assemblare niente.
+  tirarsi dietro Postgres. **Nessuno viene fuso.** Se ne aggiungono due, per motivi opposti fra
+  loro: `loader` per tenere **fuori** dal motore il codice che carica codice, `etl-js` per dare una
+  porta d'ingresso a chi non vuole assemblare niente.
 - `contracts` a zero dipendenze e le regole di dependency-cruiser.
 - `EtlError` e la classificazione degli errori.
 - La forma di un run: una sorgente, N transformer, una destinazione.
@@ -397,38 +386,31 @@ Le regole di dependency-cruiser vanno estese: `core` non deve dipendere ne' da `
 
 | Pacchetto | Che cosa cambia |
 |---|---|
-| `contracts` | `Transformer`/`TransformSession` (D5), `PROTOCOL_VERSION` 2, via `run-cache.ts`, via `secretRef`, via `capabilities`/`category`, via `PluginModule` |
-| `core` | `pipeline.ts` apre e usa le sessioni; `context.ts` senza `secretRef`; `loader.ts` esce; nasce `createHostCtx` (D10) |
-| `loader` (nuovo) | accoglie `loadPlugin`, `createLoader`, i prefissi npm e `PluginModule`; nasce `createDirectoryLoader` (D11.1) |
-| `etl-js` (nuovo) | meta-pacchetto: core + plugin standard, registry pronta, ri-esporta l'API (D13) |
-| `cli` | dipende dal meta-pacchetto; `builtins.ts` sparisce; una sola costruzione del `Ctx` |
+| `contracts` | `Transformer`/`TransformSession` (C1), `PROTOCOL_VERSION` 2, via `run-cache.ts`, via `secretRef`, via `capabilities`/`category`, via `PluginModule` |
+| `core` | `pipeline.ts` apre e usa le sessioni; `context.ts` senza `secretRef`; `loader.ts` esce; nasce `createHostCtx` |
+| `loader` (nuovo) | `loadPlugin`, `createLoader`, i prefissi npm, `PluginModule`, `createDirectoryLoader` |
+| `etl-js` (nuovo) | meta-pacchetto: core + plugin standard, registry pronta, ri-esporta l'API |
 | `plugin-transforms` | 5 transformer a sessione, `configReader` dimezzato, `seenByRun` sparisce; nasce `dedup` |
 | `plugin-lookup` | a sessione: spariscono `cachesByRun`, `configId`, `parsedConfigs` |
 | `plugin-csv`, `plugin-postgres` | solo `protocol: 2` nel manifest |
+| `cli` | dipende dal meta-pacchetto; `builtins.ts` sparisce; una sola costruzione del `Ctx` |
 | `testing` | harness a sessione, `mockCtx` senza `secretRef` |
-| `docs/`, `CLAUDE.md` | regola d'ammissione (D3), nuovo protocollo, `dedup`, i campi tolti |
+| `docs/`, `CLAUDE.md` | regola d'ammissione, protocollo 2, `dedup`, i campi tolti, I10, i `GRANT`, dove vivono le Definition, l'esempio di plugin custom |
 
 Il conto: **sei concetti in meno nei contratti**, tutto lo stato globale mutabile dei plugin, e il
 motore che smette di caricare codice da solo.
 
-Nessuna finestra di compatibilita' fra protocollo 1 e 2: non esiste ancora un plugin fuori da questo
-repo. E' esattamente il motivo per cui si fa adesso.
-
 ## Ordine dei lavori
 
-1. **D5** - transformer a sessione, protocollo 2. Per primo perche' irreversibile.
-2. **D3.1** - `dedup` scritto sulla nuova API: e' anche la prova che l'API nuova regge, e chiude il
-   difetto dell'`upsert` con chiavi duplicate.
-3. **D4** - il loader esce dal core e diventa `@etl-js/loader`; nasce la regola dependency-cruiser
+1. **C1** - transformer a sessione, protocollo 2. Per primo perche' irreversibile.
+2. **A4** - `dedup` sulla nuova API: chiude il difetto dell'`upsert` ed e' la prova che l'API regge.
+3. **B3** - il loader esce dal core e diventa `@etl-js/loader`; nasce la regola dependency-cruiser
    che impedisce a `core` di tornare a dipenderne.
-4. **D6 + D7** - `secretRef`, `capabilities`, `category` via.
-5. **D10** - `createHostCtx`, e la CLI che smette di costruire il contesto due volte.
-6. **D13** - il meta-pacchetto `etl-js`, la rinomina del pacchetto di radice, `builtins.ts` che
-   sparisce, le regole dependency-cruiser estese.
-7. **D11.1** - `createDirectoryLoader` con la difesa dai nomi ostili.
-8. **D1 + D3 + D8 + D9/I10 + D11.2/11.3 + D12** - tutta la documentazione: regola d'ammissione,
-   scelta su `preview`, invariante I10, i `GRANT`, l'esempio di plugin custom senza dipendenze,
-   e dove vivono le Definition.
+4. **C2 + C3 + C4** - le rimozioni e `createHostCtx`; la CLI smette di costruire il contesto due
+   volte.
+5. **B4 + B3.1** - il meta-pacchetto, la rinomina del pacchetto di radice, `builtins.ts` che
+   sparisce, il caricamento da cartella con la difesa dai nomi ostili.
+6. **Documentazione** - A1, A3, B2, D1/I10, D2, D3 in `CLAUDE.md` e `docs/`.
 
 Ogni passo si chiude con `npm run check` verde: e' il criterio di done gia' in uso nel progetto.
 
@@ -436,16 +418,15 @@ Ogni passo si chiude con `npm run check` verde: e' il criterio di done gia' in u
 
 | Rischio | Mitigazione |
 |---|---|
-| D5 tocca tutti i transformer insieme | Sono 6 file piccoli con test propri; la suite e' verde oggi e deve restarlo a ogni passo |
+| C1 tocca tutti i transformer insieme | Sono 6 file piccoli con test propri; la suite e' verde oggi e deve restarlo a ogni passo |
 | La regola d'ammissione verra' aggirata sotto la pressione di un cliente che paga | Sta scritta in `CLAUDE.md` accanto agli invarianti, dove si legge prima di aggiungere codice |
 | `flush()` resta senza utenti reali anche dopo | Accettato: e' l'unico modo per lasciare aperto il caso aggregazione a chi scrive plugin fuori dal repo |
 | Il loader spostato rompe il caricamento per nome | Il test `cli > l'esempio completo e' valido con i plugin caricati da npm` lo copre gia' |
-| Un ottavo pacchetto e' un pacchetto in piu' da pubblicare e versionare | Accettato: e' il prezzo per cui D4 e' strutturale e non una promessa. Chi non carica plugin dinamicamente non lo installa |
+| Due pacchetti in piu' da pubblicare e versionare | Accettato: e' il prezzo per cui B3 e' strutturale e B4 esiste. Chi non ne ha bisogno non li installa |
 
 ## Fuori scopo
 
-Difetti noti, gia' rilevati, che **non** fanno parte di questo documento e vanno pianificati a
-parte:
+Difetti noti, gia' rilevati, da pianificare a parte:
 
 - una colonna inattesa fa fallire il run intero invece di scartare la riga (`writer.ts`,
   `#resolveColumns`);
