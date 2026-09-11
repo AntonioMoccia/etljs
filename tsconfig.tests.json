@@ -15,5 +15,12 @@
       "@etl-js/testing": ["packages/testing/src/index.ts"]
     }
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "packages/testing/src/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "tools/**/*.ts",
+    "packages/testing/src/**/*.ts",
+    "vitest.config.ts",
+    "vitest.docs.config.ts"
+  ]
 }

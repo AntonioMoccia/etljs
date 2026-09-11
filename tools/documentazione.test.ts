@@ -11,9 +11,14 @@ import { plugins as transforms } from "etl-js/transforms";
 /**
  * La documentazione invecchia in silenzio: si aggiunge un'opzione di config e
  * nessuno se ne accorge finche' qualcuno non la cerca invano. Questi test la
- * legano al codice, cosi' marcire diventa un test rosso.
+ * legano al codice.
+ *
+ * Sono **fuori da `npm test`**: con un solo autore il beneficio - proteggere
+ * chi contribuisce da documentazione obsoleta - non c'e' ancora, e l'attrito
+ * si' . Si lanciano a comando con `npm run check:docs`, e tornano bloccanti
+ * il giorno che arrivano contributor esterni o la GUI.
  */
-const repoRoot = new URL("../..", import.meta.url).pathname;
+const repoRoot = new URL("..", import.meta.url).pathname;
 
 const DOCUMENTI = [
   "README.md",
