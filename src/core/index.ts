@@ -3,6 +3,7 @@
  * esistano: li riceve gia' pronti (Registry) o li carica per nome (fase 2).
  */
 export { run, type RunOptions, type PluginResolver } from "./pipeline.js";
+export { createEngine, type Engine, type EngineRunOptions } from "./engine.js";
 export { Registry, defaultRegistry, assertUsableManifest } from "./registry.js";
 export {
   validate,

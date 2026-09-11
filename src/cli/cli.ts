@@ -8,15 +8,14 @@ import {
   type RunResult,
 } from "../contracts/index.js";
 import {
-  Registry,
+  createEngine,
   createFileInput,
-  createLoader,
   createPostgresProvider,
   describePlugin,
   preview,
-  run,
   validate,
   type DbProvider,
+  type Engine,
   type HostCtx,
 } from "../core/index.js";
 import { builtinPlugins } from "./builtins.js";
@@ -108,40 +107,13 @@ function withInput(definition: Definition, input: string): Definition {
  */
 const openInput = createFileInput();
 
-function builtinRegistry(): Registry {
-  return new Registry().registerAll(builtinPlugins);
-}
-
-/**
- * Registry per una Definition: ai plugin inclusi aggiunge quelli citati dalla
- * Definition e installati via npm, caricandoli per nome. La CLI non elenca
- * quei plugin da nessuna parte, e nemmeno il core (I2).
- */
-async function registryFor(definition: Definition): Promise<Registry> {
-  const registry = builtinRegistry();
-  const loader = createLoader({ registry });
-  const names = [
-    definition.source?.type,
-    ...(definition.transform ?? []).map((step) => step?.type),
-    definition.destination?.type,
-  ].filter((name): name is string => typeof name === "string" && name.length > 0);
-
-  for (const name of new Set(names)) {
-    if (registry.has(name)) continue;
-    try {
-      await loader(name);
-    } catch (error) {
-      // "non installato" lo racconta validate() indicando il punto esatto;
-      // un protocollo incompatibile o un plugin rotto no, e va fatto vedere.
-      if (EtlError.is(error) && error.code === ErrorCodes.PLUGIN_NOT_FOUND) continue;
-      throw error;
-    }
-  }
-  return registry;
+/** Un engine con la libreria standard gia' collegata. */
+function engineConPluginInclusi(): Engine {
+  return createEngine().useAll(builtinPlugins);
 }
 
 function describePlugins(): Manifest[] {
-  return builtinRegistry().list();
+  return engineConPluginInclusi().registry.list();
 }
 
 /** Rende un rilievo di validazione in una riga leggibile da un operatore. */
@@ -169,7 +141,7 @@ export async function main(argv: string[]): Promise<number> {
       process.stderr.write(`Manca il nome del plugin\n\n${USAGE}`);
       return 1;
     }
-    const schema = describePlugin(name, { registry: builtinRegistry() });
+    const schema = describePlugin(name, { registry: engineConPluginInclusi().registry });
     process.stdout.write(`${JSON.stringify(schema, null, 2)}\n`);
     return 0;
   }
@@ -181,7 +153,7 @@ export async function main(argv: string[]): Promise<number> {
       return 1;
     }
     const definition = await loadDefinition(path);
-    const result = validate(definition, { registry: await registryFor(definition) });
+    const result = validate(definition, { registry: engineConPluginInclusi().registry });
     if (result.issues.length === 0) {
       process.stdout.write(`${path}: nessun rilievo\n`);
       return 0;
@@ -270,7 +242,7 @@ export async function main(argv: string[]): Promise<number> {
   };
 
   const rejectFile = values.rejects ? new RejectFile(values.rejects) : undefined;
-  const registry = await registryFor(definition);
+  const engine = engineConPluginInclusi();
   const limit = values.limit === undefined ? undefined : Number(values.limit);
   if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) {
     throw new EtlError(`--limit vuole un intero positivo, ricevuto "${values.limit}"`, {
@@ -279,8 +251,7 @@ export async function main(argv: string[]): Promise<number> {
   }
 
   try {
-    const result: RunResult = await run(definition, ctx, {
-      registry,
+    const result: RunResult = await engine.run(definition, ctx, {
       dryRun,
       ...(limit === undefined ? {} : { limitRows: limit }),
       events: {
@@ -361,7 +332,7 @@ async function previewCommand(args: string[]): Promise<number> {
       log: jsonLogger("warn", { client: definition.client }),
       signal: new AbortController().signal,
     },
-    { registry: await registryFor(definition) },
+    { registry: engineConPluginInclusi().registry },
   );
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
