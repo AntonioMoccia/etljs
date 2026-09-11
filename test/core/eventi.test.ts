@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import type { RunResult } from "etljs/contracts";
-import { Registry, run, withRetry, type RunEvents } from "etljs";
-import { EtlError } from "etljs/contracts";
+import type { RunResult } from "etl-js/contracts";
+import { Registry, run, withRetry, type RunEvents } from "etl-js";
+import { EtlError } from "etl-js/contracts";
 import { definition, hostCtx, pickyTransformer, readerOf, writerOf } from "./fakes.js";
 
 /**

@@ -1,4 +1,4 @@
-import type { Logger, Row, WriteTransaction, WriterCtx } from "etljs/contracts";
+import type { Logger, Row, WriteTransaction, WriterCtx } from "etl-js/contracts";
 
 /** Traccia di tutto cio' che il writer ha chiesto alla transazione. */
 export interface FakeTransaction extends WriteTransaction {

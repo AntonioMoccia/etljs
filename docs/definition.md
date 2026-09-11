@@ -184,7 +184,7 @@ etl validate flussi/acme.json
 ```
 
 ```ts
-import { validate } from "etljs";
+import { validate } from "etl-js";
 const { valid, issues } = validate(definition, { registry });
 ```
 

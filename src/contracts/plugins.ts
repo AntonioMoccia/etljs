@@ -70,7 +70,7 @@ export type Plugin = ReaderPlugin | TransformerPlugin | WriterPlugin;
  * Forma di un modulo che esporta plugin. Un modulo puo' contenerne **uno** o
  * **piu' d'uno**: un pacchetto e' un'unita' di distribuzione, un plugin
  * un'unita' di configurazione, e non c'e' motivo perche' coincidano
- * (`etljs/transformers` ne porta cinque).
+ * (`etl-js/transformers` ne porta cinque).
  *
  * Serve a chi scrive un caricatore proprio. Il motore non legge questa forma:
  * i plugin glieli passa chi lo usa, con `use()`.

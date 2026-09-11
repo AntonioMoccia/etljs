@@ -14,7 +14,7 @@ Quei dati vanno collegati a record che esistono gia' sul database, e riscritti o
 l'origine rimanda il file aggiornato, **senza duplicare nulla**.
 
 La tentazione e' scrivere uno script per ogni origine. A venti origini sono venti script che nessuno
-ricorda, ognuno col suo bug. `etljs` esiste per fare in modo che un'origine sia **un file JSON**.
+ricorda, ognuno col suo bug. `etl-js` esiste per fare in modo che un'origine sia **un file JSON**.
 
 ## La Definition
 
@@ -165,7 +165,7 @@ Il core non decide **niente** che riguardi i dati. Conta, mette in fila, e ripor
 ## Cosa non c'e', di proposito
 
 Non ci sono GUI, server HTTP, autenticazione, code, scheduler, ne' persistenza dei run. Sono cose
-dell'applicazione che usa questa libreria. `etljs` esegue un'importazione e restituisce un
+dell'applicazione che usa questa libreria. `etl-js` esegue un'importazione e restituisce un
 `RunResult`: sta a chi la chiama decidere se salvarlo, mostrarlo o riprovare.
 
 Dettagli e alternative: [limiti.md](limiti.md).

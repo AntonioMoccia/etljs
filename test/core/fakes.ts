@@ -9,8 +9,8 @@ import {
   type TransformerPlugin,
   type WriteSession,
   type WriterPlugin,
-} from "etljs/contracts";
-import type { HostCtx } from "etljs";
+} from "etl-js/contracts";
+import type { HostCtx } from "etl-js";
 
 /**
  * Plugin finti con schemi scritti a mano: i test del core non devono importare

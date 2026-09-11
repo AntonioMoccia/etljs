@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { PROTOCOL_VERSION, type Ctx, type Row, type TransformerPlugin } from "etljs/contracts";
-import { Registry, run } from "etljs";
+import { PROTOCOL_VERSION, type Ctx, type Row, type TransformerPlugin } from "etl-js/contracts";
+import { Registry, run } from "etl-js";
 import { definition, hostCtx, pickyTransformer, readerOf, writerOf } from "./fakes.js";
 
 describe("run", () => {

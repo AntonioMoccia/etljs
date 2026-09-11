@@ -1,5 +1,5 @@
 {
-  "name": "@etljs/testing",
+  "name": "@etl-js/testing",
   "version": "0.1.0",
   "type": "module",
   "description": "Harness per testare i plugin senza servizi esterni",

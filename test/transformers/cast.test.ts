@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { mockCtx, testTransformer } from "@etljs/testing";
-import { castTransformer as plugin } from "etljs/transformers";
+import { mockCtx, testTransformer } from "@etl-js/testing";
+import { castTransformer as plugin } from "etl-js/transformers";
 
 async function cast(config: unknown, rows: Record<string, unknown>[]) {
   return testTransformer(plugin, { rows, config, ctx: mockCtx() });

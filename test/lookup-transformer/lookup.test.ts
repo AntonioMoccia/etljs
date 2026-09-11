@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import type { Row } from "etljs/contracts";
-import { batchOf, mockCtx, recordingDb, testTransformer } from "@etljs/testing";
-import { lookupTransformer as plugin } from "etljs/lookup-transformer";
+import type { Row } from "etl-js/contracts";
+import { batchOf, mockCtx, recordingDb, testTransformer } from "@etl-js/testing";
+import { lookupTransformer as plugin } from "etl-js/lookup-transformer";
 
 /** Database che risponde con le righe di `anagrafica` filtrate sui parametri ricevuti. */
 function anagraficaDb(anagrafica: Row[]) {

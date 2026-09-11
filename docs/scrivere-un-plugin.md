@@ -18,13 +18,13 @@ conversioni, filtri, rinomine, controlli e lookup, e sono parametrizzati. Se ti 
 ## Uno scheletro completo
 
 ```ts
-// @acme/etljs-plugin-maiuscolo/src/index.ts
+// @acme/etl-js-plugin-maiuscolo/src/index.ts
 import {
   PROTOCOL_VERSION,
   configInvalid,
   type TransformerPlugin,
   type Transformer,
-} from "etljs/contracts";
+} from "etl-js/contracts";
 import { z } from "zod";
 
 // 1. La config e' un DATO: si descrive con uno schema, non con del codice (I1).
@@ -75,11 +75,11 @@ export default plugin;
 
 ```json
 {
-  "name": "@acme/etljs-plugin-maiuscolo",
+  "name": "@acme/etl-js-plugin-maiuscolo",
   "type": "module",
   "main": "./dist/index.js",
-  "keywords": ["etljs-plugin", "transformer"],
-  "peerDependencies": { "etljs": "^0.1.0" },
+  "keywords": ["etl-js-plugin", "transformer"],
+  "peerDependencies": { "etl-js": "^0.1.0" },
   "dependencies": { "zod": "^4.0.0" }
 }
 ```
@@ -185,7 +185,7 @@ non prima.
 4. **Un transformer non scrive.** Nemmeno un file di log: si usa `ctx.log` (I4).
 5. **Non nomina nessun flusso.** Se ti serve un `if (flusso === "acme")`, manca un parametro alla
    config (I8).
-6. **Non importa il core ne' un altro plugin.** Dipende solo da `etljs/contracts`. Dentro questo
+6. **Non importa il core ne' un altro plugin.** Dipende solo da `etl-js/contracts`. Dentro questo
    repository `npm run check:boundaries` te lo impedisce; in un pacchetto tuo e' una disciplina che
    conviene tenere, perche' e' cio' che rende il plugin sostituibile.
 
@@ -236,14 +236,14 @@ convenzione: su quell'oggetto il metodo non esiste.
 ## Pubblicarlo e usarlo
 
 ```bash
-npm i @acme/etljs-plugin-maiuscolo
+npm i @acme/etl-js-plugin-maiuscolo
 ```
 
-Lo si collega come gli altri, e poi lo si cita nella Definition. Nessun sorgente di `etljs` va
+Lo si collega come gli altri, e poi lo si cita nella Definition. Nessun sorgente di `etl-js` va
 toccato:
 
 ```ts
-import { maiuscoloTransformer } from "@acme/etljs-plugin-maiuscolo";
+import { maiuscoloTransformer } from "@acme/etl-js-plugin-maiuscolo";
 const engine = createEngine().use(csvReader).use(maiuscoloTransformer).use(postgresWriter);
 ```
 

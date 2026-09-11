@@ -1,6 +1,6 @@
-# Documentazione di etljs
+# Documentazione di etl-js
 
-`etljs` e' un motore di importazione dati a plugin: una **libreria senza stato** che si incorpora in
+`etl-js` e' un motore di importazione dati a plugin: una **libreria senza stato** che si incorpora in
 un'applicazione piu' grande. Legge una sorgente, trasforma le righe, le scrive in una destinazione
 transazionale, e racconta a chi la usa che cosa e' successo.
 
@@ -26,9 +26,9 @@ fasi](piano.md).
 ## In tre righe
 
 ```ts
-import { createEngine } from "etljs";
-import { csvReader } from "etljs/csv-reader";
-import { postgresWriter } from "etljs/postgres-writer";
+import { createEngine } from "etl-js";
+import { csvReader } from "etl-js/csv-reader";
+import { postgresWriter } from "etl-js/postgres-writer";
 
 const engine = createEngine().use(csvReader).use(postgresWriter);
 const result = await engine.run(definition, ctx);
@@ -60,24 +60,24 @@ Il motore non conosce nessuno dei nomi scritti li' dentro: li riceve da `use()` 
 
 ## Gli entry point
 
-Un solo pacchetto npm, `etljs`, con un import per area. Le dipendenze puntano tutte verso i
+Un solo pacchetto npm, `etl-js`, con un import per area. Le dipendenze puntano tutte verso i
 contratti, e non e' una convenzione: `npm run check:boundaries` lo verifica, e sei test piantano un
 import proibito per assicurarsi che il controllo funzioni davvero.
 
 | Import | Contiene | Dipende da |
 |---|---|---|
-| `etljs/contracts` | tipi, `PROTOCOL_VERSION`, `EtlError`, utility SQL | **niente** |
-| `etljs` | `createEngine`, `run`, `validate`, `describe`, `preview`, eventi, driver Postgres | contracts, ajv, pg |
-| `etljs/csv-reader` | reader CSV | contracts, csv-parse |
-| `etljs/transformers` | `cast`, `filter`, `default`, `rename`, `validate` | contracts, zod |
-| `etljs/lookup-transformer` | `lookup` | contracts, zod |
-| `etljs/postgres-writer` | writer Postgres | contracts, zod |
+| `etl-js/contracts` | tipi, `PROTOCOL_VERSION`, `EtlError`, utility SQL | **niente** |
+| `etl-js` | `createEngine`, `run`, `validate`, `describe`, `preview`, eventi, driver Postgres | contracts, ajv, pg |
+| `etl-js/csv-reader` | reader CSV | contracts, csv-parse |
+| `etl-js/transformers` | `cast`, `filter`, `default`, `rename`, `validate` | contracts, zod |
+| `etl-js/lookup-transformer` | `lookup` | contracts, zod |
+| `etl-js/postgres-writer` | writer Postgres | contracts, zod |
 
-Il comando `etljs` arriva col pacchetto. `pg` e `pg-copy-streams` sono **opzionali**: senza Postgres
+Il comando `etl-js` arriva col pacchetto. `pg` e `pg-copy-streams` sono **opzionali**: senza Postgres
 tutto il resto funziona.
 
 **Un entry point non e' un plugin.** `exports` dice cosa puoi importare, `use()` dice cosa partecipa
-a un'importazione: `etljs/transformers` e' un import solo che porta **cinque** plugin.
+a un'importazione: `etl-js/transformers` e' un import solo che porta **cinque** plugin.
 
 ## Le nove regole che spiegano tutto il resto
 

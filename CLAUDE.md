@@ -1,4 +1,4 @@
-# etljs
+# etl-js
 
 Motore di importazione dati a plugin, **libreria senza stato** destinata a essere incorporata in un
 software piu' grande. Caso d'uso guida: importare file CSV di formati diversi, collegandoli
@@ -41,17 +41,17 @@ I2 e I9 sono imposti da **dependency-cruiser** (`npm run check:boundaries`), non
 
 ## Struttura
 
-Un solo pacchetto npm, `etljs`, con un entry point per cartella:
+Un solo pacchetto npm, `etl-js`, con un entry point per cartella:
 
 ```
 src/
-  contracts/            etljs/contracts             tipi + utility pure, ZERO dipendenze
-  core/                 etljs                       engine, pipeline, validate, describe, preview
-  csv-reader/           etljs/csv-reader            reader
-  postgres-writer/      etljs/postgres-writer       writer: append, upsert, replace-by
-  transformers/         etljs/transformers          cast, filter, default, rename, validate
-  lookup-transformer/   etljs/lookup-transformer    collega a dati gia' presenti, in batch
-  cli/                  il comando `etljs` (campo "bin"); l'unico posto che nomina i plugin
+  contracts/            etl-js/contracts             tipi + utility pure, ZERO dipendenze
+  core/                 etl-js                       engine, pipeline, validate, describe, preview
+  csv-reader/           etl-js/csv-reader            reader
+  postgres-writer/      etl-js/postgres-writer       writer: append, upsert, replace-by
+  transformers/         etl-js/transformers          cast, filter, default, rename, validate
+  lookup-transformer/   etl-js/lookup-transformer    collega a dati gia' presenti, in batch
+  cli/                  il comando `etl-js` (campo "bin"); l'unico posto che nomina i plugin
 packages/
   testing/      harness di prova. Non pubblicato, non esportato come subpath
 test/           speculare a src/, piu' test/integrazione/
@@ -71,7 +71,7 @@ conoscere alcun plugin per nome (I2).
 **Convenzione dei nomi: `<nome><Tipo>`.** Ogni plugin si esporta come `csvReader`,
 `postgresWriter`, `castTransformer`. Niente default export e niente `plugin`
 generico: `use(csvReader)` dice **cosa** entra nella pipeline e **con che ruolo**,
-`use(csv)` no. `etljs/transformers` esporta anche `transformers`, l'elenco dei
+`use(csv)` no. `etl-js/transformers` esporta anche `transformers`, l'elenco dei
 cinque, per `useAll()`.
 
 ## Contratti

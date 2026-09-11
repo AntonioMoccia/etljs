@@ -5,14 +5,14 @@
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "etljs": ["src/core/index.ts"],
-      "etljs/contracts": ["src/contracts/index.ts"],
-      "etljs/csv-reader": ["src/csv-reader/index.ts"],
-      "etljs/postgres-writer": ["src/postgres-writer/index.ts"],
-      "etljs/transformers": ["src/transformers/index.ts"],
-      "etljs/lookup-transformer": ["src/lookup-transformer/index.ts"],
-      "etljs/cli": ["src/cli/index.ts"],
-      "@etljs/testing": ["packages/testing/src/index.ts"]
+      "etl-js": ["src/core/index.ts"],
+      "etl-js/contracts": ["src/contracts/index.ts"],
+      "etl-js/csv-reader": ["src/csv-reader/index.ts"],
+      "etl-js/postgres-writer": ["src/postgres-writer/index.ts"],
+      "etl-js/transformers": ["src/transformers/index.ts"],
+      "etl-js/lookup-transformer": ["src/lookup-transformer/index.ts"],
+      "etl-js/cli": ["src/cli/index.ts"],
+      "@etl-js/testing": ["packages/testing/src/index.ts"]
     }
   },
   "include": [

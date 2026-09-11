@@ -2,11 +2,11 @@ import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { describe, expect, test } from "vitest";
-import type { Manifest } from "etljs/contracts";
-import { csvReader } from "etljs/csv-reader";
-import { postgresWriter } from "etljs/postgres-writer";
-import { lookupTransformer } from "etljs/lookup-transformer";
-import { transformers } from "etljs/transformers";
+import type { Manifest } from "etl-js/contracts";
+import { csvReader } from "etl-js/csv-reader";
+import { postgresWriter } from "etl-js/postgres-writer";
+import { lookupTransformer } from "etl-js/lookup-transformer";
+import { transformers } from "etl-js/transformers";
 
 /**
  * La documentazione invecchia in silenzio: si aggiunge un'opzione di config e

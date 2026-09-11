@@ -9,11 +9,11 @@ import {
   type Logger,
   type Row,
   type WriterPlugin,
-} from "etljs/contracts";
-import { Registry, createFileInput, run } from "etljs";
-import type { HostCtx } from "etljs";
-import { csvReader } from "etljs/csv-reader";
-import { castTransformer, defaultTransformer, validateTransformer } from "etljs/transformers";
+} from "etl-js/contracts";
+import { Registry, createFileInput, run } from "etl-js";
+import type { HostCtx } from "etl-js";
+import { csvReader } from "etl-js/csv-reader";
+import { castTransformer, defaultTransformer, validateTransformer } from "etl-js/transformers";
 
 /**
  * Criterio della fase 5, provato dal file su disco fino alla destinazione:
@@ -195,7 +195,7 @@ describe("import parziale e run annullato", () => {
 
 describe("file di scarto della CLI", () => {
   test("scrive un CSV con motivo e provenienza di ogni riga rifiutata", async () => {
-    const { main } = await import("etljs/cli");
+    const { main } = await import("etl-js/cli");
     const path = await fixture("cli.csv", 10, 3);
     const definition = join(dir, "cli.json");
     const rejects = join(dir, "scarti.csv");

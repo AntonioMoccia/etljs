@@ -1,9 +1,28 @@
 {
-  "name": "etljs",
+  "name": "etl-js",
   "version": "0.1.0",
   "type": "module",
   "description": "Motore di importazione dati a plugin: libreria senza stato",
+  "keywords": [
+    "etl",
+    "csv",
+    "postgres",
+    "import",
+    "pipeline",
+    "plugin",
+    "typescript",
+    "streaming"
+  ],
   "license": "MIT",
+  "author": "Antonio Moccia <moccia.ant@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AntonioMoccia/etljs.git"
+  },
+  "homepage": "https://github.com/AntonioMoccia/etljs#readme",
+  "bugs": {
+    "url": "https://github.com/AntonioMoccia/etljs/issues"
+  },
   "engines": {
     "node": ">=18.18"
   },
@@ -36,10 +55,13 @@
     }
   },
   "bin": {
-    "etljs": "./dist/cli/bin.js"
+    "etl-js": "./dist/cli/bin.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
   ],
   "workspaces": [
     "packages/*"
@@ -51,7 +73,8 @@
     "test": "vitest run",
     "check:boundaries": "depcruise src packages --config .dependency-cruiser.cjs",
     "check:docs": "vitest run --config vitest.docs.config.ts",
-    "check": "npm run build && npm run typecheck:tests && npm test && npm run check:boundaries"
+    "check": "npm run build && npm run typecheck:tests && npm test && npm run check:boundaries",
+    "prepublishOnly": "npm run check"
   },
   "dependencies": {
     "ajv": "^8.17.1",
