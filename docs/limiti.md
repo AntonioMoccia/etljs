@@ -30,7 +30,7 @@ transazione offre `bulkLoad` e `exec`. Un writer con config
 smista le colonne in due `bulkLoad` dentro la **stessa** transazione.
 
 La prima resta la raccomandata, e non per pigrizia: la decisione di fondo e' che **l'ETL non si
-accoppia al modello del gestionale**. Atterra in una tabella piatta e l'host, che quel modello lo
+accoppia al modello del database**. Atterra in una tabella piatta e l'host, che quel modello lo
 conosce, promuove.
 
 ## Eseguire una procedura durante il caricamento: non c'e' il gancio
@@ -97,7 +97,7 @@ Un import a scaglioni si fa oggi spezzando il file, o con un `filter` su un inte
 
 ## `lookup` confronta le chiavi come stringhe
 
-Se la colonna del gestionale e' numerica, **`cast` deve girare prima di `lookup`**. E' documentato ma
+Se la colonna del database e' numerica, **`cast` deve girare prima di `lookup`**. E' documentato ma
 non impedito: una chiave `"00123"` non trovera' l'intero `123`.
 
 ## Postgres e' l'unico writer
@@ -129,6 +129,6 @@ PG_TEST_URL=postgres://postgres:postgres@localhost:5432/postgres npm test
 
 ## In sintesi
 
-`etl-js` fa una cosa: **prendere un file di un cliente, renderlo dati, e metterlo in una tabella in
+`etl-js` fa una cosa: **prendere un file di un flusso, renderlo dati, e metterlo in una tabella in
 modo ripetibile**. Tutto cio' che sta prima (chi decide quando) e dopo (chi promuove i dati nel
 modello di dominio) e' dell'applicazione che la usa. Questa e' la scelta, non un residuo da colmare.

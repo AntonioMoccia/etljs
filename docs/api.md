@@ -199,7 +199,7 @@ Definition le scrivi tu, puoi farne a meno; se arrivano da fuori, `baseDir` e' o
 
 ```ts
 const provider = await createPostgresProvider({
-  gestionale: {
+  database: {
     connectionString: process.env.DATABASE_URL!,
     max: 4,
     statementTimeoutMs: 30_000,

@@ -1,8 +1,8 @@
 # etl-js
 
 Motore di importazione dati a plugin, **libreria senza stato** destinata a essere incorporata in un
-software piu' grande. Caso d'uso guida: importare piani di consegna da CSV dei clienti collegandoli a
-ordini gia' presenti su un gestionale Postgres.
+software piu' grande. Caso d'uso guida: importare file CSV di formati diversi, collegandoli
+a dati gia' presenti su Postgres.
 
 **Non fa parte di questo progetto:** GUI, server HTTP, autenticazione, coda/scheduling, persistenza di
 run ed errori. Vivono nell'app che usa questa libreria. Se servono a un test, si mockano.
@@ -18,7 +18,7 @@ run ed errori. Vivono nell'app che usa questa libreria. Se servono a un test, si
 | I5 | **Mai una query per riga**: i lookup sono batch (`WHERE k = ANY($1)`) | inusabile a volumi reali |
 | I6 | Le connessioni al DB le fornisce il `core` via `ctx`; un plugin non apre connessioni ne' vede credenziali (riceve `secretRef`) | impossibile gestire pool, transazioni, segreti |
 | I7 | SQL sempre **parametrizzato**, identificatori escapati, operatori in whitelist | SQL injection |
-| I8 | Un cliente = un file di config, **mai** un plugin. Nome di cliente nel codice = manca un parametro a un plugin generico | a 20 clienti, 20 pacchetti: progetto morto |
+| I8 | Un flusso = un file di config, **mai** un plugin. Nome di flusso nel codice = manca un parametro a un plugin generico | a 20 flussi, 20 pacchetti: progetto morto |
 | I9 | Le dipendenze puntano verso `contracts`: `contracts` non dipende da nulla; i `plugin-*` dipendono solo da `contracts`, mai da `core`; `core` non dipende dai plugin | il grafo si accoppia |
 
 I2 e I9 sono imposti da **dependency-cruiser** (`npm run check:boundaries`), non dalla disciplina.
@@ -48,7 +48,7 @@ packages/
   plugin-csv/         reader
   plugin-postgres/    writer: append, upsert, replace-by
   plugin-transforms/  libreria standard: cast, filter, default, rename, validate
-  plugin-lookup/      transformer (cardine): collega al gestionale, in batch
+  plugin-lookup/      transformer (cardine): collega al database, in batch
 ```
 
 **Un pacchetto npm non e' un plugin.** E' un'unita' di distribuzione; il plugin e' un'unita' di

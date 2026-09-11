@@ -124,7 +124,7 @@ interface Failed {
 
 ```
 campo "quantita": 0 e' sotto il minimo 1
-nessuna corrispondenza in ordini per ordine_cliente=ORD-9999
+nessuna corrispondenza in anagrafica per codice=COD-9999
 "31/02/2026" non e' una data esistente
 ```
 
@@ -160,10 +160,10 @@ Scrive **man mano che gli scarti arrivano**, non alla fine:
 
 ```csv
 run_id;file;riga;severita;codice;motivo;riga_originale
-"93885a05";"acme.csv";"3";"reject";"VALIDATION_FAILED";"campo ""quantita"": 0 e' sotto il minimo 1";"{""Ordine"":""ORD-3""}"
+"93885a05";"acme.csv";"3";"reject";"VALIDATION_FAILED";"campo ""quantita"": 0 e' sotto il minimo 1";"{""Codice"":""COD-3""}"
 ```
 
-`riga_originale` e' la riga com'era in JSON: nessun dato si perde, e il cliente puo' ricevere il file
+`riga_originale` e' la riga com'era in JSON: nessun dato si perde, e il flusso puo' ricevere il file
 esattamente delle righe da correggere.
 
 Il file di scarto viene chiuso anche quando il run **fallisce**: e' li' che si legge perche' e' fallito.
@@ -229,8 +229,8 @@ per il risultato e il comando si puo' mettere in pipe:
 | `CONFIG_INVALID` | correggere la Definition; non riprovare |
 | `PLUGIN_NOT_FOUND` | installare il pacchetto che l'errore suggerisce |
 | `PROTOCOL_MISMATCH` | aggiornare il plugin o il motore |
-| `TOO_MANY_FAILED` | guardare il file di scarto: di solito e' il file del cliente, non la config |
+| `TOO_MANY_FAILED` | guardare il file di scarto: di solito e' il file del flusso, non la config |
 | `READ_FAILED` retryable | riprovare piu' tardi: la sorgente non era raggiungibile |
 | `DB_ERROR` retryable | rimettere in coda, con backoff |
-| `WRITE_FAILED` `COLUMN_MISMATCH` | il cliente ha aggiunto una colonna: aggiornare `rename` o `columns` |
+| `WRITE_FAILED` `COLUMN_MISMATCH` | il flusso ha aggiunto una colonna: aggiornare `rename` o `columns` |
 | `INVALID_USAGE` | e' un errore di chi ha scritto l'host o il plugin |

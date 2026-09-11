@@ -50,7 +50,7 @@ L'ordine e' quello dell'array e conta. Le regole pratiche:
 
 | Prima | Poi | Perche' |
 |---|---|---|
-| `filter` | `rename` | il filtro lavora sulle intestazioni originali del cliente |
+| `filter` | `rename` | il filtro lavora sulle intestazioni originali del flusso |
 | `rename` | `cast` | e' piu' leggibile convertire campi coi nomi definitivi |
 | `cast` | `lookup` | la chiave di ricerca dev'essere del tipo giusto, o non trova nulla |
 | `cast` | `validate` | `min: 1` su una stringa non significa niente |
@@ -179,7 +179,7 @@ portato quell'esecuzione, e `riga_origine` rimanda alla riga del file.
 ## Validare senza eseguire
 
 ```bash
-etl validate clienti/acme.json
+etl validate flussi/acme.json
 ```
 
 ```ts

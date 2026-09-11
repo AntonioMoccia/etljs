@@ -48,7 +48,7 @@
     {
       "type": "lookup",
       "config": {
-        "db": "gestionale",
+        "db": "principale",
         "table": "ordini",
         "on": [
           "ordine_cliente"
@@ -97,7 +97,7 @@
   "destination": {
     "type": "postgres",
     "config": {
-      "db": "gestionale",
+      "db": "principale",
       "table": "landing_piani_consegna",
       "strategy": "replace-by",
       "replaceKey": [

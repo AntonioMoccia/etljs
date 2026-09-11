@@ -4,8 +4,8 @@
 un'applicazione piu' grande. Legge una sorgente, trasforma le righe, le scrive in una destinazione
 transazionale, e racconta a chi la usa che cosa e' successo.
 
-Il caso d'uso che ne ha guidato ogni scelta: importare piani di consegna dai CSV dei clienti
-collegandoli a ordini gia' presenti su un gestionale Postgres. **Un cliente non ha mai codice
+Il caso d'uso che ne ha guidato ogni scelta: far confluire file CSV di formati diversi in una
+tabella unica, collegandoli a dati gia' presenti su Postgres. **Un flusso non ha mai codice
 proprio: ha un file di configurazione JSON.**
 
 ## Da dove cominciare
@@ -14,7 +14,7 @@ proprio: ha un file di configurazione JSON.**
 |---|---|
 | capire come funziona, in 10 minuti | [Concetti](concetti.md) |
 | far girare il primo import | [Guida rapida](guida-rapida.md) |
-| scrivere la configurazione di un cliente | [La Definition](definition.md) e [I plugin](plugin.md) |
+| scrivere la configurazione di un flusso | [La Definition](definition.md) e [I plugin](plugin.md) |
 | usare la libreria da un altro programma | [API](api.md) |
 | capire un errore o gestire gli scarti | [Errori, eventi e scarti](errori.md) |
 | aggiungere logica tua | [Scrivere un plugin](scrivere-un-plugin.md) |
@@ -70,5 +70,5 @@ Ogni scelta strana di questa libreria discende da uno di questi vincoli. Sono sp
 5. **Mai una query per riga.** I lookup sono in batch.
 6. **Le connessioni le fornisce il core**, i plugin non le aprono e non vedono credenziali.
 7. **SQL sempre parametrizzato**, identificatori escapati, operatori in whitelist.
-8. **Un cliente = un file di config.** Un nome di cliente nel codice significa che manca un parametro.
+8. **Un flusso = un file di config.** Un nome di un flusso nel codice significa che manca un parametro.
 9. **Le dipendenze puntano verso `contracts`.**

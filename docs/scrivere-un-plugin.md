@@ -5,7 +5,7 @@ nominera' mai: lo carica per nome quando una Definition lo cita (I2).
 
 Prima di scriverne uno, controlla se serve davvero: [i plugin esistenti](plugin.md) coprono
 conversioni, filtri, rinomine, controlli e lookup, e sono parametrizzati. Se ti serve un
-`if (cliente === "acme")`, manca un parametro a un plugin che c'e' gia'.
+`if (flusso === "acme")`, manca un parametro a un plugin che c'e' gia'.
 
 ## Le tre forme
 
@@ -124,13 +124,13 @@ test("mette in maiuscolo solo i campi indicati", async () => {
 `mockCtx({ inputs })` serve i byte da una stringa: un test di un reader non tocca il disco.
 
 ```ts
-const ctx = mockCtx({ inputs: { "piano.csv": "Ordine;Qta\nORD-1;5\n" } });
+const ctx = mockCtx({ inputs: { "dati.csv": "Codice;Qta\nCOD-1;5\n" } });
 
 const batches = [];
-for await (const b of plugin.impl.read({ input: "piano.csv", delimiter: ";" }, ctx)) {
+for await (const b of plugin.impl.read({ input: "dati.csv", delimiter: ";" }, ctx)) {
   batches.push(b);
 }
-expect(batches[0].rows).toEqual([{ Ordine: "ORD-1", Qta: "5" }]);
+expect(batches[0].rows).toEqual([{ Codice: "COD-1", Qta: "5" }]);
 ```
 
 ### Provare un plugin che legge dal database
@@ -142,18 +142,18 @@ l'unico modo onesto di verificare che una query sia **una sola per lotto** (I5) 
 import { mockCtx, recordingDb, testTransformer } from "@etl-js/testing";
 
 test("una sola interrogazione per lotto, e nessun valore dentro l'SQL", async () => {
-  const db = recordingDb(() => [{ codice: "ORD-1", id: 11 }]);
+  const db = recordingDb(() => [{ codice: "COD-1", id: 11 }]);
 
   const result = await testTransformer(plugin, {
-    rows: [{ codice: "ORD-1" }, { codice: "ORD-2" }],
-    config: { db: "gestionale", table: "ordini", on: ["codice"], select: "id" },
-    ctx: mockCtx({ databases: { gestionale: db } }),
+    rows: [{ codice: "COD-1" }, { codice: "COD-2" }],
+    config: { db: "database", table: "anagrafica", on: ["codice"], select: "id" },
+    ctx: mockCtx({ databases: { database: db } }),
   });
 
   expect(db.calls).toHaveLength(1);
   expect(db.calls[0].sql).toContain('"codice" = ANY($1)');
-  expect(db.calls[0].sql).not.toContain("ORD-1");   // i valori sono parametri
-  expect(db.calls[0].params).toEqual([["ORD-1", "ORD-2"]]);
+  expect(db.calls[0].sql).not.toContain("COD-1");   // i valori sono parametri
+  expect(db.calls[0].params).toEqual([["COD-1", "COD-2"]]);
 });
 ```
 
@@ -163,12 +163,12 @@ Un transformer con cache o con `flush` va provato su piu' lotti, con lo **stesso
 che lavora il motore.
 
 ```ts
-const ctx = mockCtx({ databases: { gestionale: db } });
+const ctx = mockCtx({ databases: { database: db } });
 
 await testTransformer(plugin, {
   batches: [
-    batchOf([{ codice: "ORD-1" }], { runId: ctx.runId, offset: 0 }),
-    batchOf([{ codice: "ORD-1" }], { runId: ctx.runId, offset: 1 }),
+    batchOf([{ codice: "COD-1" }], { runId: ctx.runId, offset: 0 }),
+    batchOf([{ codice: "COD-1" }], { runId: ctx.runId, offset: 1 }),
   ],
   config,
   ctx,
@@ -202,7 +202,7 @@ esattamente cosa aggiungere, invece di un `undefined` silenzioso.
 3. **Non interpola valori nell'SQL.** I valori sono parametri; gli identificatori passano da
    `escapeIdentifier`; gli operatori vengono da `SQL_OPERATORS` (I7).
 4. **Un transformer non scrive.** Nemmeno un file di log: si usa `ctx.log` (I4).
-5. **Non nomina nessun cliente.** Se ti serve un `if (cliente === "acme")`, manca un parametro alla
+5. **Non nomina nessun flusso.** Se ti serve un `if (flusso === "acme")`, manca un parametro alla
    config (I8).
 6. **Non importa `@etl-js/core` ne' un altro plugin.** `npm run check:boundaries` te lo impedisce (I9).
 
@@ -259,5 +259,5 @@ npm i @etl-js/plugin-maiuscolo
 Poi basta citarlo in una Definition; nessun sorgente di questo progetto va toccato:
 
 ```json
-{ "type": "maiuscolo", "config": { "fields": ["ordine_cliente"] } }
+{ "type": "maiuscolo", "config": { "fields": ["codice"] } }
 ```

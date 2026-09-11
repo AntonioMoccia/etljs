@@ -4,17 +4,17 @@ Dieci minuti per il modello mentale. Tutto il resto della documentazione presupp
 
 ## Il problema
 
-Venti clienti mandano ogni settimana un piano di consegna in CSV. Le colonne si somigliano ma non
-sono mai uguali: uno scrive `Nr Ordine`, un altro `Cod. Ordine`; uno usa il punto e virgola, un altro
-la virgola; le date sono `03/02/2026` o `2026-02-03` o "settimana 7"; le quantita' hanno la virgola
-decimale e il punto delle migliaia. In cima al file c'e' l'intestazione del gestionale che l'ha
-esportato, in fondo una riga di totali.
+Venti origini diverse mandano ogni settimana un file CSV, e devono confluire tutte nella **stessa
+tabella**. Le colonne si somigliano ma non sono mai uguali: una scrive `Codice`, un'altra `Cod. Art.`;
+una usa il punto e virgola, un'altra la virgola; le date sono `03/02/2026` o `2026-02-03` o
+"settimana 7"; le quantita' hanno la virgola decimale e il punto delle migliaia. In cima al file c'e'
+l'intestazione del sistema che l'ha esportato, in fondo una riga di totali.
 
-Quei dati vanno collegati a ordini che esistono gia' sul gestionale, e riscritti ogni volta che il
-cliente rimanda il piano aggiornato, **senza duplicare nulla**.
+Quei dati vanno collegati a record che esistono gia' sul database, e riscritti ogni volta che
+l'origine rimanda il file aggiornato, **senza duplicare nulla**.
 
-La tentazione e' scrivere uno script per cliente. A venti clienti sono venti script che nessuno
-ricorda, ognuno col suo bug. `etl-js` esiste per fare in modo che un cliente sia **un file JSON**.
+La tentazione e' scrivere uno script per ogni origine. A venti origini sono venti script che nessuno
+ricorda, ognuno col suo bug. `etl-js` esiste per fare in modo che un'origine sia **un file JSON**.
 
 ## La Definition
 
@@ -36,8 +36,8 @@ Tre cose da notare, perche' sono l'intero progetto in miniatura:
 **E' un dato, non codice.** Nessuna funzione, nessuna espressione: solo valori. Si versiona in git,
 si diffa, si valida, e un giorno una GUI potra' generarla.
 
-**Non nomina il cliente da nessuna parte se non in `client`.** Non c'e' `"tipo": "csv-acme"`. Se ti
-trovi a scrivere il nome di un cliente dentro un plugin, manca un parametro alla config.
+**Non nomina il flusso da nessuna parte se non in `client`.** Non c'e' `"tipo": "csv-acme"`. Se ti
+trovi a scrivere il nome di un flusso dentro un plugin, manca un parametro alla config.
 
 **I `type` sono nomi logici, non pacchetti npm.** Il motore non sa cosa sia `"cast"`: chiede al
 registry, o lo carica da npm per convenzione. Non c'e' un solo `if` sul tipo, in tutto il core.
@@ -123,7 +123,7 @@ Due dettagli che valgono piu' di una regola scritta:
 
 ## Le politiche: cosa fare quando i dati sono sbagliati
 
-Un file di un cliente e' sbagliato in parte quasi sempre. La domanda non e' "e' valido?", ma "quanto
+Un file di un flusso e' sbagliato in parte quasi sempre. La domanda non e' "e' valido?", ma "quanto
 puo' essere sbagliato prima che convenga fermarsi?".
 
 ```json
@@ -140,7 +140,7 @@ E' la domanda che risolve la maggior parte dei dubbi:
 
 | Decisione | Chi |
 |---|---|
-| Che formato ha il file di questo cliente | la **Definition** |
+| Che formato ha il file di questo flusso | la **Definition** |
 | Come si legge un CSV | il **plugin** `csv` |
 | Se una riga e' accettabile | il **plugin** `validate`, secondo le regole della Definition |
 | Quanti scarti tollerare | la **policy** nella Definition |

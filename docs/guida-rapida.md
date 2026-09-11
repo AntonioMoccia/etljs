@@ -26,21 +26,20 @@ una documentazione dei parametri separata dal codice, lo schema **e'** la docume
 
 ## Un import in cinque minuti
 
-Il repository contiene un CSV volutamente sporco — `examples/acme.csv` — con tre righe di
-intestazione, il punto e virgola, l'encoding latin1, una riga vuota in mezzo e una riga di totali in
-fondo:
+Il repository contiene un CSV volutamente sporco, `examples/acme.csv`, con tutto cio' che rende
+antipatico un file vero:
 
-```
-Piano di consegna - ACME S.p.A.
-Generato il 03/02/2026
+| | |
+|---|---|
+| tre righe di preambolo | il titolo del report e la data di generazione |
+| una riga vuota | fra il preambolo e l'intestazione |
+| punto e virgola | invece della virgola |
+| encoding latin1 | con accenti dentro i valori |
+| decimali all'italiana | `1.250,50` |
+| una riga tutta vuota | in mezzo ai dati |
+| una riga di totali | in fondo, che non e' un dato |
 
-Nr Ordine;Data;Quantita;Città
-ORD-1001;03/02/2026;1.250,50;Perugia
-ORD-1002;04/02/2026;12;Città di Castello
-;;;
-ORD-1003;05/02/2026;7,5;Assisi
-TOTALE;;1.270,00;
-```
+Ed `examples/acme.json`, la Definition che lo legge.
 
 ### 1. Controllare la configurazione senza eseguirla
 
@@ -96,10 +95,10 @@ In dry-run la destinazione **non viene nemmeno aperta**: nessuna transazione, ne
 Serve un Postgres e una tabella di atterraggio:
 
 ```sql
-CREATE TABLE landing_piani_consegna (
-  ordine_id     integer,
-  ordine_cliente text,
-  data_consegna date,
+CREATE TABLE landing_righe (
+  anagrafica_id     integer,
+  codice text,
+  data_documento date,
   quantita      numeric,
   run_id        text,
   file_origine  text,
@@ -108,8 +107,8 @@ CREATE TABLE landing_piani_consegna (
 ```
 
 ```bash
-export DATABASE_URL='postgres://utente:password@localhost:5432/gestionale'
-etl run examples/acme.json --db gestionale=env:DATABASE_URL --rejects scarti.csv
+export DATABASE_URL='postgres://utente:password@localhost:5432/database'
+etl run examples/acme.json --db principale=env:DATABASE_URL --rejects scarti.csv
 ```
 
 La credenziale non passa dalla riga di comando: `env:NOME` la fa leggere dall'ambiente, cosi' non
@@ -120,52 +119,36 @@ sbagliato non fa esplodere la memoria.
 
 ```csv
 run_id;file;riga;severita;codice;motivo;riga_originale
-"93885a05";"examples/acme.csv";"3";"reject";"LOOKUP_MISSING";"nessuna corrispondenza in ordini per ordine_cliente=";"{...}"
+"93885a05";"examples/acme.csv";"3";"reject";"LOOKUP_MISSING";"nessuna corrispondenza in anagrafica per codice=";"{...}"
 ```
 
 ## Leggere la Definition dell'esempio
 
-```json
-{
-  "client": "acme",
-  "source": { "type": "csv", "config": {
-    "input": "examples/acme.csv", "delimiter": ";", "encoding": "latin1", "skipRows": 3 } },
-  "transform": [
-    { "type": "filter",   "config": { "drop": [{ "field": "Nr Ordine", "empty": true }] } },
-    { "type": "rename",   "config": { "map": { "Nr Ordine": "ordine_cliente", "Data": "data_consegna", "Quantita": "quantita" } } },
-    { "type": "cast",     "config": {
-        "data_consegna": { "date": "dd/MM/yyyy" },
-        "quantita":      { "number": { "decimal": ",", "thousands": "." } } } },
-    { "type": "lookup",   "config": {
-        "db": "gestionale", "table": "ordini", "on": ["ordine_cliente"],
-        "select": "ordine_id", "onMissing": "reject" } },
-    { "type": "validate", "config": { "rules": [
-        { "field": "quantita",      "min": 1,               "severity": "reject" },
-        { "field": "data_consegna", "notBefore": "today",   "severity": "warn" } ] } },
-    { "type": "default",  "config": { "values": {
-        "run_id":       { "fromMeta": "runId",  "when": "always" },
-        "file_origine": { "fromMeta": "source", "when": "always" },
-        "riga_origine": { "fromMeta": "offset", "when": "always" } } } }
-  ],
-  "destination": { "type": "postgres", "config": {
-    "db": "gestionale", "table": "landing_piani_consegna",
-    "strategy": "replace-by", "replaceKey": ["ordine_id"] } },
-  "policy": { "maxFailedRatio": 0.2, "rejectFile": true }
-}
-```
+Apri `examples/acme.json`. In ordine, quello che fa:
+
+| Stadio | Cosa risolve |
+|---|---|
+| `csv` | delimitatore, encoding e le tre righe di preambolo |
+| `filter` | butta le righe senza chiave e quella dei totali |
+| `rename` | porta le intestazioni del file sui nomi interni |
+| `cast` | date `dd/MM/yyyy` e decimali con la virgola |
+| `lookup` | collega ogni riga a un record gia' presente sul database |
+| `validate` | quantita' sotto il minimo, date nel passato |
+| `default` | marca ogni riga con run, file e numero di riga |
+| `postgres` | scrive con `replace-by`, cosi' un secondo import non duplica |
 
 **L'ordine dei passaggi conta**, e lo decide la Definition:
 
-- `filter` prima di `rename`, perche' lavora sulle intestazioni originali del cliente;
+- `filter` prima di `rename`, perche' lavora sulle intestazioni originali del flusso;
 - `cast` prima di `lookup`, perche' la chiave di ricerca dev'essere del tipo giusto;
 - `validate` dopo `cast`, perche' `min: 1` su una stringa non vuol dire niente;
 - `default` per ultimo, perche' marca cio' che e' sopravvissuto.
 
-**`replace-by` e' il motivo per cui si puo' rimandare lo stesso file due volte.** Il cliente manda il
-piano aggiornato di certi ordini: il writer cancella dalla landing table **solo quelle chiavi** e
-reinserisce. Gli ordini non citati nel file non vengono toccati.
+**`replace-by` e' il motivo per cui si puo' rimandare lo stesso file due volte.** Il flusso manda il
+piano aggiornato di certi anagrafica: il writer cancella dalla landing table **solo quelle chiavi** e
+reinserisce. Gli anagrafica non citati nel file non vengono toccati.
 
-## Un secondo cliente
+## Un secondo flusso
 
 Punto e virgola diventa virgola, la data e' all'americana, c'e' una colonna in piu' e le settimane al
 posto delle date:
@@ -175,13 +158,13 @@ posto delle date:
   "client": "beta",
   "source": { "type": "csv", "config": { "input": "beta.csv", "delimiter": "," } },
   "transform": [
-    { "type": "rename", "config": { "map": { "Order": "ordine_cliente", "Week": "settimana" } } },
+    { "type": "rename", "config": { "map": { "Order": "codice", "Week": "settimana" } } },
     { "type": "cast",   "config": { "settimana": { "week": "ww/yyyy" } } },
     { "type": "lookup", "config": {
-        "db": "gestionale", "table": "ordini", "on": ["ordine_cliente"], "select": "ordine_id" } }
+        "db": "principale", "table": "anagrafica", "on": ["codice"], "select": "anagrafica_id" } }
   ],
   "destination": { "type": "postgres", "config": {
-    "table": "landing_piani_consegna", "strategy": "replace-by", "replaceKey": ["ordine_id"] } }
+    "table": "landing_righe", "strategy": "replace-by", "replaceKey": ["anagrafica_id"] } }
 }
 ```
 
@@ -189,10 +172,10 @@ posto delle date:
 
 ## Il file di ingresso cambia ogni settimana
 
-La Definition e' il modello del cliente, non del singolo file. Il file del giorno si passa cosi':
+La Definition e' il modello del flusso, non del singolo file. Il file del giorno si passa cosi':
 
 ```bash
-etl run clienti/acme.json --input /var/spool/acme/2026-02-10.csv
+etl run flussi/acme.json --input /var/spool/acme/2026-02-10.csv
 ```
 
 `--input` riscrive `source.config.input`. E' una riscrittura del **dato**, non un ramo nel motore.
@@ -203,7 +186,7 @@ etl run clienti/acme.json --input /var/spool/acme/2026-02-10.csv
 import { Registry, createFileInput, createLoader, createPostgresProvider, run } from "@etl-js/core";
 
 const provider = await createPostgresProvider({
-  gestionale: { connectionString: process.env.DATABASE_URL! },
+  principale: { connectionString: process.env.DATABASE_URL! },
 });
 const registry = new Registry();
 

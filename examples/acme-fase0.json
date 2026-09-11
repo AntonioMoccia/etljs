@@ -13,7 +13,7 @@
   "destination": {
     "type": "postgres",
     "config": {
-      "db": "gestionale",
+      "db": "principale",
       "table": "landing_piani_consegna"
     }
   },

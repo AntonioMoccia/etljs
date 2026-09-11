@@ -1,10 +1,10 @@
 # etl-js
 
 Motore di importazione dati a plugin: libreria senza stato, in TypeScript, pensata per essere
-incorporata in un software piu' grande. Il caso d'uso che ne guida ogni scelta e' importare piani di
-consegna dai CSV dei clienti collegandoli a ordini gia' presenti su un gestionale Postgres.
+incorporata in un software piu' grande. Il caso d'uso che ne guida ogni scelta e' far confluire
+file CSV di formati diversi in una tabella unica, collegandoli a dati gia' presenti su Postgres.
 
-**Un cliente non ha mai codice proprio: ha un file di configurazione JSON.**
+**Un flusso non ha mai codice proprio: ha un file di configurazione JSON.**
 
 ## Provalo
 
@@ -23,7 +23,7 @@ Per scrivere davvero su Postgres, e tenere le righe rifiutate:
 
 ```bash
 node packages/cli/dist/bin.js run examples/acme.json \
-  --db gestionale=env:DATABASE_URL \
+  --db principale=env:DATABASE_URL \
   --rejects scarti.csv
 ```
 
@@ -59,39 +59,40 @@ propria versione. Un pacchetto dichiara i suoi con `export const plugins: Plugin
 | `@etl-js/plugin-transforms` | la libreria standard: `cast`, `filter`, `default`, `rename`, `validate` |
 | `@etl-js/plugin-lookup` | collega le righe a dati gia' sul database, in batch |
 
-## Un cliente, un file
+## Un flusso, un file
 
-Questa e' l'intera configurazione di un cliente. Non c'e' nulla di specifico ad Acme se non i valori:
+Questa e' l'intera configurazione di un flusso. Non c'e' nulla di specifico a questa origine se non
+i valori: cambiano il delimitatore, l'encoding e i nomi delle colonne, non il codice.
 
 ```json
 {
   "client": "acme",
   "source": { "type": "csv", "config": {
-    "input": "examples/acme.csv", "delimiter": ";", "encoding": "latin1", "skipRows": 3 } },
+    "input": "dati.csv", "delimiter": ";", "encoding": "latin1", "skipRows": 3 } },
   "transform": [
-    { "type": "filter", "config": { "drop": [{ "field": "Nr Ordine", "empty": true }] } },
-    { "type": "rename", "config": { "map": { "Nr Ordine": "ordine_cliente", "Data": "data_consegna" } } },
+    { "type": "filter", "config": { "drop": [{ "field": "Codice", "empty": true }] } },
+    { "type": "rename", "config": { "map": { "Codice": "codice", "Data": "data_documento" } } },
     { "type": "cast",   "config": {
-      "data_consegna": { "date": "dd/MM/yyyy" },
+      "data_documento": { "date": "dd/MM/yyyy" },
       "quantita": { "number": { "decimal": ",", "thousands": "." } } } },
     { "type": "lookup", "config": {
-      "db": "gestionale", "table": "ordini", "on": ["ordine_cliente"],
-      "select": "ordine_id", "onMissing": "reject" } },
+      "db": "principale", "table": "anagrafica", "on": ["codice"],
+      "select": "anagrafica_id", "onMissing": "reject" } },
     { "type": "validate", "config": { "rules": [
       { "field": "quantita", "min": 1, "severity": "reject" },
-      { "field": "data_consegna", "notBefore": "today", "severity": "warn" } ] } },
+      { "field": "data_documento", "notBefore": "today", "severity": "warn" } ] } },
     { "type": "default", "config": { "values": {
       "run_id": { "fromMeta": "runId", "when": "always" },
       "riga_origine": { "fromMeta": "offset", "when": "always" } } } }
   ],
   "destination": { "type": "postgres", "config": {
-    "table": "landing_piani_consegna", "strategy": "replace-by", "replaceKey": ["ordine_id"] } },
+    "table": "landing_righe", "strategy": "replace-by", "replaceKey": ["anagrafica_id"] } },
   "policy": { "maxFailedRatio": 0.2, "rejectFile": true }
 }
 ```
 
-Un secondo cliente col punto e virgola al posto della virgola, le date all'americana e una colonna in
-piu' e' un secondo file JSON, non un secondo pacchetto.
+Una seconda origine col punto e virgola al posto della virgola, le date all'americana e una colonna
+in piu' e' un secondo file JSON, non un secondo pacchetto.
 
 ## Usarla da un altro programma
 
@@ -100,7 +101,7 @@ import { Registry, createLoader, run } from "@etl-js/core";
 import { createPostgresProvider } from "@etl-js/core";
 
 const provider = await createPostgresProvider({
-  gestionale: { connectionString: process.env.DATABASE_URL! },
+  principale: { connectionString: process.env.DATABASE_URL! },
 });
 
 const registry = new Registry();

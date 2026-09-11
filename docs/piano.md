@@ -32,7 +32,7 @@ Non a parole: ogni invariante ha qualcosa che fallisce se lo violi.
 | I5 mai una query per riga | `lookup.test.ts` conta le interrogazioni: una per lotto, zero se il lotto e' in cache |
 | I6 connessioni dal core | il writer riceve una transazione gia' aperta; nessun plugin importa `pg` |
 | I7 SQL parametrizzato | i test controllano che i valori **non** compaiano nel testo dell'istruzione e che gli identificatori ostili siano quotati |
-| I8 un cliente = un file | `examples/acme.json` non contiene nulla di specifico ad Acme se non i valori |
+| I8 un flusso = un file | `examples/acme.json` non contiene nulla di specifico ad Acme se non i valori |
 | I9 grafo delle dipendenze | `npm run check:boundaries`, con cinque sonde che ne verificano il funzionamento |
 
 `pipeline.ts` e' cambiato solo tre volte, e mai per un plugin: fase 0 (il motore), fase 1 (validare
@@ -73,5 +73,5 @@ Tre cambi arrivati dopo il piano, tutti su richiesta e tutti con la suite verde 
   La CLI lo fa gia' con `--rejects`.
 - Il reader CSV assume che il file stia su disco. Uno `stdin`/S3 sarebbe un altro reader, non una
   modifica a questo.
-- `lookup` confronta le chiavi convertendole in stringa: se la colonna del gestionale e' numerica,
+- `lookup` confronta le chiavi convertendole in stringa: se la colonna del database e' numerica,
   `cast` deve girare **prima** del lookup. La Definition d'esempio lo fa.

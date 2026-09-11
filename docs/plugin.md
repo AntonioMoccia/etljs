@@ -26,7 +26,7 @@ risolve come path, come oggetto su storage o come vuole lui.
 | `input` | string | **obbligatorio** | Riferimento alla sorgente, risolto dall'host |
 | `delimiter` | string | `","` | Separatore di campo |
 | `quote` | string (1 car.) | `"\""` | Carattere di quoting |
-| `encoding` | `"utf8"` \| `"latin1"` | `"utf8"` | latin1 copre i CSV esportati dai gestionali europei |
+| `encoding` | `"utf8"` \| `"latin1"` | `"utf8"` | latin1 copre i CSV esportati con impostazioni locali europee |
 | `skipRows` | intero ≥ 0 | `0` | Righe di preambolo da buttare **prima** dell'intestazione |
 | `header` | boolean \| string[] | `true` | Vedi sotto |
 | `trim` | boolean | `true` | Toglie gli spazi ai bordi di ogni campo |
@@ -46,10 +46,10 @@ risolve come path, come oggetto su storage o come vuole lui.
 Comprese quelle vuote. Un file cosi':
 
 ```
-Piano di consegna - ACME S.p.A.     <- 1
+File di dati - ACME S.p.A.     <- 1
 Generato il 03/02/2026              <- 2
                                     <- 3 (vuota, conta lo stesso)
-Nr Ordine;Data                      <- 4, l'intestazione
+Codice;Data                      <- 4, l'intestazione
 ```
 
 vuole `skipRows: 3`. Se le righe vuote non contassero, dovresti aprire il file e contare due volte.
@@ -63,7 +63,7 @@ Cosi' un file con una riga storta non abbatte l'importazione.
 ### Il BOM
 
 Con `bom: true` (default) il BOM iniziale viene tolto, e viene riconosciuto anche il caso vero dei
-gestionali: file salvato **UTF-8 con BOM ma dichiarato latin1**, dove il BOM arriva come tre
+sistemi esterni: file salvato **UTF-8 con BOM ma dichiarato latin1**, dove il BOM arriva come tre
 caratteri anziche' uno.
 
 Attenzione: `trim: true` toglie comunque U+FEFF, che e' uno spazio a tutti gli effetti. Per
@@ -116,14 +116,14 @@ un'espressione regolare malformata lo e'.
 ```json
 { "type": "filter", "config": { "drop": [
   { "allEmpty": true },
-  { "field": "Nr Ordine", "empty": true },
-  { "field": "Nr Ordine", "matches": "^(TOTALE|TOT\\.)", "ignoreCase": true }
+  { "field": "Codice", "empty": true },
+  { "field": "Codice", "matches": "^(TOTALE|TOT\\.)", "ignoreCase": true }
 ] } }
 ```
 
 ```json
 { "type": "filter", "config": {
-  "keep": [{ "field": "tipo", "in": ["consegna", "reso"] }],
+  "keep": [{ "field": "tipo", "in": ["attivo", "sospeso"] }],
   "drop": [{ "field": "qta", "lt": 1 }],
   "report": true
 } }
@@ -137,12 +137,12 @@ di scarto e **conta** nella soglia `maxFailedRatio`.
 
 ## rename
 
-Dalle intestazioni del cliente ai nomi usati dal gestionale. E' il plugin che rende inutile scrivere
-un pacchetto per cliente.
+Dalle intestazioni del file di origine ai nomi usati dal database. E' il plugin che rende inutile scrivere
+un pacchetto per flusso.
 
 | Campo | Tipo | Default | Note |
 |---|---|---|---|
-| `map` | oggetto | **obbligatorio** | `"intestazione del cliente": "nome interno"` |
+| `map` | oggetto | **obbligatorio** | `"intestazione del file di origine": "nome interno"` |
 | `keepUnmapped` | boolean | `true` | Se falso tiene **solo** i campi nominati nella mappa |
 | `drop` | string[] | — | Campi da eliminare |
 | `strict` | boolean | `false` | Se vero, una colonna attesa e assente **scarta la riga** |
@@ -157,7 +157,7 @@ Con `strict: true` la riga incompleta diventa un `Failed` con codice `RENAME_MIS
 
 ```json
 { "type": "rename", "config": {
-  "map": { "Nr Ordine": "ordine_cliente", "Data": "data_consegna" },
+  "map": { "Codice": "codice", "Data": "data_documento" },
   "trimKeys": true,
   "drop": ["Note interne"]
 } }
@@ -172,7 +172,7 @@ conversione**; i campi non nominati restano intatti.
 
 ```json
 { "type": "cast", "config": {
-  "data_consegna": { "date": "dd/MM/yyyy" },
+  "data_documento": { "date": "dd/MM/yyyy" },
   "quantita":      { "number": { "decimal": ",", "thousands": "." } },
   "urgente":       { "boolean": { "true": ["si", "x"], "false": ["no", ""] } }
 } }
@@ -211,15 +211,15 @@ Una data che non esiste non diventa il mese successivo: `31/02/2026` e' un error
 
 `{ "week": "ww/yyyy" }` con valore `"07/2026"` produce `"2026-02-09"`, il lunedi' di quella settimana.
 
-La settimana 1 del 2026 comincia il **29 dicembre 2025**, secondo ISO 8601: un piano "settimana 1"
-non e' un piano di gennaio. Una settimana che in quell'anno non esiste (la 53 in un anno che ne ha
-52) e' un errore.
+La settimana 1 del 2026 comincia il **29 dicembre 2025**, secondo ISO 8601: un dato marcato
+"settimana 1" non appartiene a gennaio. Una settimana che in quell'anno non esiste (la 53 in un anno
+che ne ha 52) e' un errore.
 
 ### I numeri
 
 | Opzione | Effetto |
 |---|---|
-| `decimal` | separatore decimale del cliente, default `"."` |
+| `decimal` | separatore decimale del flusso, default `"."` |
 | `thousands` | separatore delle migliaia; se assente, nessuno |
 | `strip` | caratteri da togliere prima di leggere (es. `"%"`, `"€"`) |
 
@@ -236,7 +236,7 @@ Ogni conversione accetta due opzioni in piu':
 | `onError` | `"reject"` | `reject`: scarta e segnala. `warn`: tiene la riga con `null` e segnala. `skip`: scarta in silenzio |
 
 Un campo vuoto **non nullable** e' un errore, non uno zero silenzioso: e' la differenza fra "il
-cliente non ha mandato la quantita'" e "la quantita' e' zero".
+flusso non ha mandato la quantita'" e "la quantita' e' zero".
 
 Gli scarti hanno codice `CAST_FAILED` e il motivo dice quale campo e perche':
 `campo "quantita": "n/d" non e' un numero`.
@@ -245,14 +245,14 @@ Gli scarti hanno codice `CAST_FAILED` e il motivo dice quale campo e perche':
 
 ## default
 
-Riempie i campi che il cliente non manda. **Non scarta mai nulla**: se un campo obbligatorio manca ed
+Riempie i campi che il flusso non manda. **Non scarta mai nulla**: se un campo obbligatorio manca ed
 e' un problema, lo dice `validate`.
 
 ```json
 { "type": "default", "config": { "values": {
   "stato":        "da_confermare",
   "origine":      { "value": "acme", "when": "always" },
-  "codice":       { "fromField": "Nr Ordine" },
+  "codice":       { "fromField": "Codice" },
   "run_id":       { "fromMeta": "runId",  "when": "always" },
   "file_origine": { "fromMeta": "source", "when": "always" },
   "riga_origine": { "fromMeta": "offset", "when": "always" }
@@ -298,7 +298,7 @@ ferma la riga o si limita a segnalarla.
 ```json
 { "type": "validate", "config": { "rules": [
   { "field": "quantita",      "min": 1,             "severity": "reject" },
-  { "field": "data_consegna", "notBefore": "today", "severity": "warn" },
+  { "field": "data_documento", "notBefore": "today", "severity": "warn" },
   { "field": "codice",        "required": true, "unique": true }
 ] } }
 ```
@@ -341,14 +341,14 @@ sempre `VALIDATION_FAILED`.
 ## lookup
 
 Collega le righe a dati gia' presenti su un database, **in batch**. E' il plugin che rende utile
-tutto il resto: senza, un CSV di piani di consegna non sa a quale ordine appartiene.
+tutto il resto: senza, un CSV di flussi di dati non sa a quale anagrafica appartiene.
 
 ```json
 { "type": "lookup", "config": {
-  "db": "gestionale",
-  "table": "ordini",
-  "on": ["ordine_cliente"],
-  "select": "ordine_id",
+  "db": "principale",
+  "table": "anagrafica",
+  "on": ["codice"],
+  "select": "anagrafica_id",
   "onMissing": "reject"
 } }
 ```
@@ -366,17 +366,17 @@ tutto il resto: senza, un CSV di piani di consegna non sa a quale ordine apparti
 ### `on`
 
 ```json
-"on": ["ordine_cliente"]                                    // campo e colonna si chiamano uguale
-"on": [{ "field": "ordine_cliente", "column": "codice" }]   // nomi diversi
+"on": ["codice"]                                    // campo e colonna si chiamano uguale
+"on": [{ "field": "codice", "column": "codice" }]   // nomi diversi
 "on": ["anno", "numero"]                                    // chiave composta
 ```
 
 ### `select`
 
 ```json
-"select": "ordine_id"                                    // una colonna, stesso nome
-"select": ["ordine_id", "stato"]                         // piu' colonne, stessi nomi
-"select": { "ordine_id": "id_gestionale", "stato": "s" } // colonna -> campo di destinazione
+"select": "anagrafica_id"                                    // una colonna, stesso nome
+"select": ["anagrafica_id", "stato"]                         // piu' colonne, stessi nomi
+"select": { "anagrafica_id": "id_database", "stato": "s" } // colonna -> campo di destinazione
 ```
 
 ### `onMissing`
@@ -418,13 +418,13 @@ questo elenco e' una config invalida, non un passaggio a SQL grezzo.
 Con **una chiave**, una sola interrogazione per lotto:
 
 ```sql
-SELECT "ordine_cliente", "ordine_id" FROM "ordini" WHERE "ordine_cliente" = ANY($1)
+SELECT "codice", "anagrafica_id" FROM "anagrafica" WHERE "codice" = ANY($1)
 ```
 
 Con **chiavi composte**, sempre una sola, con tutti i valori come parametri:
 
 ```sql
-SELECT ... FROM "ordini" WHERE ("anno", "numero") IN (($1, $2), ($3, $4))
+SELECT ... FROM "anagrafica" WHERE ("anno", "numero") IN (($1, $2), ($3, $4))
 ```
 
 Nessun valore finisce mai nel testo dell'istruzione; gli identificatori vengono quotati. Se le chiavi
@@ -436,7 +436,7 @@ Un lotto interamente in cache non interroga affatto il database. La cache viene 
 
 ### Il tipo delle chiavi
 
-Le chiavi si confrontano convertendole in stringa. Se la colonna del gestionale e' numerica, **`cast`
+Le chiavi si confrontano convertendole in stringa. Se la colonna del database e' numerica, **`cast`
 deve girare prima di `lookup`**, o non trovera' nulla.
 
 ---
@@ -444,7 +444,7 @@ deve girare prima di `lookup`**, o non trovera' nulla.
 ## postgres
 
 Scrive in una tabella di atterraggio (*landing table*), dentro una transazione. Promuovere i dati
-nelle tabelle di dominio e' compito dell'host: l'ETL non si accoppia al modello del gestionale.
+nelle tabelle di dominio e' compito dell'host: l'ETL non si accoppia al modello del database.
 
 | Campo | Tipo | Default | Note |
 |---|---|---|---|
@@ -460,18 +460,18 @@ nelle tabelle di dominio e' compito dell'host: l'ETL non si accoppia al modello 
 
 **`append`** — carica dritto nella destinazione con `COPY`. Il caso semplice e il piu' veloce.
 
-**`replace-by`** — *"il cliente ha rimandato il piano di questi ordini"*. Carica in una tabella
+**`replace-by`** — *"l'origine ha rimandato i dati di queste chiavi"*. Carica in una tabella
 temporanea, poi, nella stessa transazione:
 
 ```sql
 DELETE FROM "landing" AS t
-USING (SELECT DISTINCT "ordine_id" FROM staging) AS s
-WHERE t."ordine_id" = s."ordine_id";
+USING (SELECT DISTINCT "anagrafica_id" FROM staging) AS s
+WHERE t."anagrafica_id" = s."anagrafica_id";
 
-INSERT INTO "landing" ("ordine_id", ...) SELECT "ordine_id", ... FROM staging;
+INSERT INTO "landing" ("anagrafica_id", ...) SELECT "anagrafica_id", ... FROM staging;
 ```
 
-Cancella **solo le chiavi presenti nel file**: gli ordini non citati restano dove sono. Rimandare lo
+Cancella **solo le chiavi presenti nel file**: le chiavi non citate restano dove sono. Rimandare lo
 stesso file due volte lascia la tabella identica.
 
 **`upsert`** — `INSERT ... ON CONFLICT (chiave) DO UPDATE SET ...`, con le colonne della chiave escluse
@@ -496,9 +496,9 @@ niente, nemmeno la tabella temporanea.
 
 ```json
 { "type": "postgres", "config": {
-  "db": "gestionale",
-  "table": "landing_piani_consegna",
+  "db": "principale",
+  "table": "landing_righe",
   "strategy": "replace-by",
-  "replaceKey": ["ordine_id"]
+  "replaceKey": ["anagrafica_id"]
 } }
 ```
