@@ -61,7 +61,18 @@ e non sa nulla di chi sta prima o dopo di lui.
 **Writer.** Apre una sessione, che di norma e' una transazione. Riceve i lotti. Alla fine viene chiuso
 con `commit` o con `rollback`. Se qualcosa va storto a meta', non resta niente a terra.
 
-Il motore (`run`) mette in fila questi tre e conta. Non sa cosa siano.
+Il motore mette in fila questi tre e conta. Non sa cosa siano.
+
+**Come ci arrivano.** Glieli passi tu, esplicitamente:
+
+```ts
+const engine = createEngine().use(csv).use(lookup).use(postgres);
+```
+
+`use()` mette il plugin in un registry; quando una Definition scrive `"type": "csv"`, il motore lo
+cerca li' dentro per `manifest.name`. Se non c'e', fallisce con `PLUGIN_NOT_FOUND` **prima** di
+leggere una riga o aprire una transazione. Non c'e' nessun caricamento per nome, nessuna convenzione
+sui nomi dei pacchetti: se non l'hai collegato, non esiste.
 
 ## Batch, Row, Failed
 

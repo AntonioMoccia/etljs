@@ -8,26 +8,58 @@ Dal repository appena clonato al primo import, con e senza database.
 npm install etl-js
 ```
 
-Il pacchetto porta con se' anche il comando `etl-js`. Dal repository, invece:
+Node 18.18 o superiore. `pg` e `pg-copy-streams` sono dipendenze **opzionali**: senza Postgres tutto
+il resto funziona, e te ne accorgi solo quando provi a scrivere davvero.
+
+## Il primo import, da codice
+
+```ts
+import { createEngine, createFileInput } from "etl-js";
+import csv from "etl-js/csv";
+import postgres from "etl-js/postgres";
+import { plugins as transforms } from "etl-js/transforms";
+
+const engine = createEngine().use(csv).use(postgres).useAll(transforms);
+
+const result = await engine.run(definition, {
+  openInput: createFileInput({ baseDir: "/var/spool" }),
+  db: () => { throw new Error("questo import non usa il database"); },
+  secretRef: (ref) => process.env[ref] ?? "",
+  log: mioLogger,
+  signal: new AbortController().signal,
+});
+
+console.log(`${result.written} righe su ${result.read}, ${result.failed} scartate`);
+```
+
+Tre cose, e sono tutto il modello:
+
+1. **Colleghi i plugin** con `use()`. Il motore non ne conosce nessuno: se una Definition cita un
+   `type` che non hai collegato, fallisce con `PLUGIN_NOT_FOUND` prima di leggere una riga.
+2. **Fornisci il contesto**: da dove arrivano i byte, quali database, dove finiscono i log. Sono
+   cose dell'applicazione, non della libreria.
+3. **Passi una Definition** - un JSON - e ricevi un `RunResult`.
+
+## Il primo import, da riga di comando
+
+Il pacchetto porta con se' il comando `etl-js`, con tutti i plugin gia' collegati:
+
+```bash
+npx etl-js plugins                      # cosa e' collegato, coi manifest completi
+npx etl-js describe csv                 # il JSON Schema della config del reader CSV
+```
+
+`describe` e' la stessa cosa che leggera' una GUI per disegnare il modulo di configurazione: non
+c'e' una documentazione dei parametri separata dal codice, **lo schema e' la documentazione**.
+
+Dal repository, invece che dal pacchetto installato:
 
 ```bash
 npm install && npm run build
+node dist/cli/bin.js plugins
 ```
 
-Node 18.18 o superiore. `pg` e `pg-copy-streams` sono dipendenze **opzionali** del core: senza
-Postgres tutto il resto funziona, e la CLI se ne accorge solo quando provi a scrivere davvero.
-
-Nel resto della pagina `etl` sta per `npx etl-js` (o `node dist/cli/bin.js`, dal repository).
-
-## Guardarsi intorno
-
-```bash
-etl plugins            # cosa e' installato, coi manifest completi
-etl describe csv       # il JSON Schema della config del reader CSV
-```
-
-`describe` e' la stessa cosa che leggera' una GUI per disegnare il modulo di configurazione: non c'e'
-una documentazione dei parametri separata dal codice, lo schema **e'** la documentazione.
+Nel resto della pagina `etl` sta per `npx etl-js` (o `node dist/cli/bin.js`).
 
 ## Un import in cinque minuti
 
@@ -185,7 +217,9 @@ etl run flussi/acme.json --input /var/spool/acme/2026-02-10.csv
 
 `--input` riscrive `source.config.input`. E' una riscrittura del **dato**, non un ramo nel motore.
 
-## Da un altro programma
+## In produzione: connessioni, eventi, scarti
+
+L'esempio di prima senza database. Con Postgres, gli eventi e un vero logger diventa cosi':
 
 ```ts
 import { createEngine, createFileInput, createPostgresProvider } from "etl-js";
@@ -218,6 +252,10 @@ const result = await engine.run(definition, {
 
 `baseDir` non e' un dettaglio: senza, un `input` che arriva da una Definition puo' leggere qualunque
 file della macchina. Vedi [api.md](api.md#createfileinput).
+
+Gli eventi sono **osservazione**: il motore non ne aspetta l'esito e ingoia i loro errori, cosi' un
+bug nella barra di avanzamento non annulla un'importazione. Per raccogliere **tutti** gli scarti si
+usa `onRecordFailed`, che non ha limiti, mentre `RunResult.rejects` e' troncato a 1000 righe.
 
 ## Comandi
 

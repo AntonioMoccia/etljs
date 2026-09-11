@@ -61,7 +61,7 @@ poi lo usi per nome senza toccare niente — vedi [scrivere-un-plugin.md](scrive
 
 Una via di mezzo difendibile: un plugin che riceve dalla config il **riferimento** a un modulo e il
 percorso a una funzione (`{"module": "./custom.js", "fn": "acme.normalizza"}`). E' JSON, quindi I1
-regge, ed e' lo stesso meccanismo del loader dei plugin. Non c'e' oggi; se lo si aggiunge, tre
+regge. Non c'e' oggi; se lo si aggiunge, tre
 accortezze non sono opzionali: risoluzione del modulo **confinata** dall'host, navigazione del
 percorso puntato che blocchi `__proto__` e `constructor`, e la consapevolezza che dentro quella
 funzione nessuno ti impedisce di fare una query per riga.
@@ -72,11 +72,26 @@ funzione nessuno ti impedisce di fare una query per riga.
 su storage, una risposta HTTP o dei byte in memoria. Non ci entra un flusso **push** senza fine (una
 coda, un websocket): il modello e' un'importazione che comincia e finisce, non uno stream continuo.
 
-## I plugin non si ricaricano a caldo
+## I plugin non si caricano a runtime
 
-Il loader importa un pacchetto una volta per processo e lo tiene nel registry. Aggiornare o
-disinstallare un plugin richiede il riavvio del worker — come Node-RED e n8n, per lo stesso motivo:
-il modulo e' gia' nella cache di Node e ricaricarlo lascerebbe in giro due versioni della stessa cosa.
+Nel v1 i plugin si collegano **in codice**, con `createEngine().use(...)`: non esiste un modo per
+dire "carica il plugin che l'utente ha appena installato" partendo da un nome in una Definition.
+
+E' una semplificazione voluta. La risoluzione per nome da npm c'era, quando il progetto era un
+monorepo di pacchetti separati; con un pacchetto unico non ci sono piu' pacchetti da risolvere, e
+nessuno la usava. Il codice resta nella storia git (commit "Fase 3") e torna quando serve davvero:
+una GUI dove l'utente installa plugin, o un multi-tenant dove ogni flusso ha i suoi.
+
+Conseguenza da sapere in anticipo: anche quando tornera', **aggiornare o disinstallare un plugin
+richiedera' il riavvio del processo**. Il modulo e' nella cache di Node, e ricaricarlo lascerebbe in
+giro due versioni della stessa cosa. E' lo stesso vincolo di Node-RED e n8n, per lo stesso motivo.
+
+Nel frattempo un plugin di terzi si usa come qualunque dipendenza:
+
+```ts
+import maiuscolo from "@acme/etl-plugin-maiuscolo";
+const engine = createEngine().use(csv).use(maiuscolo).use(postgres);
+```
 
 ## Il core non ricorda niente
 
@@ -119,7 +134,7 @@ contenuto e localizzato in un file.
 
 | | |
 |---|---|
-| **Provato senza database** | parser CSV in streaming, tutti i transformer, la pipeline, la soglia di scarto, gli eventi, la codifica dei valori per `COPY`, la forma dell'SQL prodotto dal writer |
+| **Provato senza database** | reader CSV in streaming, tutti i transformer, la pipeline, `createEngine`, la soglia di scarto, gli eventi, la codifica dei valori per `COPY`, la forma dell'SQL prodotto dal writer, e che ogni subpath di `exports` sia importabile dal compilato |
 | **Provato solo con `PG_TEST_URL`** | `COPY` end-to-end, transazioni reali, sola lettura imposta dal server, `replace-by` che non duplica, rollback totale |
 | **Non provato** | volumi reali su un database vero: la logica c'e' ed e' in streaming, ma nessuno ha ancora importato un file da due giga |
 

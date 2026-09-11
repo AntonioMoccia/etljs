@@ -100,96 +100,77 @@ Il nome del pacchetto e' libero: nel v1 non c'e' risoluzione per convenzione, pe
 caricamento dinamico. Cio' che conta e' `manifest.name`, perche' e' quello che le Definition
 scrivono in `type`.
 
-## Provarlo: `@etl-js/testing`
+## Provarlo
 
-L'harness esegue il plugin come lo eseguirebbe il motore, senza motore, senza database e senza file.
+Un plugin si prova **senza motore, senza database e senza file**: gli si passa un lotto e un
+contesto finto, e si guarda cosa restituisce. Non serve altro, perche' il contratto e' tutto qui.
 
 ```ts
 import { describe, expect, test } from "vitest";
-import { mockCtx, testTransformer } from "@etl-js/testing";
 import { plugin } from "../src/index.js";
 
+const ctxFinto = {
+  runId: "run-di-prova",
+  openInput: async () => { throw new Error("questo test non legge sorgenti"); },
+  db: () => { throw new Error("questo test non tocca il database"); },
+  secretRef: (ref: string) => ref,
+  log: { debug(){}, info(){}, warn(){}, error(){}, child(){ return this; } },
+  signal: new AbortController().signal,
+};
+
+const lotto = (rows: Row[]) => ({ rows, meta: { runId: "run-di-prova", source: "prova.csv", offset: 0 } });
+
 test("mette in maiuscolo solo i campi indicati", async () => {
-  const result = await testTransformer(plugin, {
-    rows: [{ nome: "mario", citta: "perugia" }],
-    config: { fields: ["nome"] },
-    ctx: mockCtx(),
-  });
-  expect(result.rows).toEqual([{ nome: "MARIO", citta: "perugia" }]);
+  const { batch, failed } = await plugin.impl.transform(
+    lotto([{ nome: "mario", citta: "perugia" }]),
+    { fields: ["nome"] },
+    ctxFinto,
+  );
+  expect(batch.rows).toEqual([{ nome: "MARIO", citta: "perugia" }]);
+  expect(failed).toEqual([]);
 });
 ```
 
-### Provare un reader
+### Le tre prove che contano davvero
 
-`mockCtx({ inputs })` serve i byte da una stringa: un test di un reader non tocca il disco.
-
-```ts
-const ctx = mockCtx({ inputs: { "dati.csv": "Codice;Qta\nCOD-1;5\n" } });
-
-const batches = [];
-for await (const b of plugin.impl.read({ input: "dati.csv", delimiter: ";" }, ctx)) {
-  batches.push(b);
-}
-expect(batches[0].rows).toEqual([{ Codice: "COD-1", Qta: "5" }]);
-```
-
-### Provare un plugin che legge dal database
-
-`recordingDb` non interpreta SQL: risponde quel che gli dici e registra quel che ha ricevuto. E'
-l'unico modo onesto di verificare che una query sia **una sola per lotto** (I5) e **parametrizzata** (I7).
+**Una sola interrogazione per lotto (I5).** Se il plugin legge dal database, il `db` finto registra
+le chiamate: e' l'unico modo onesto di dimostrare che non ne fa una per riga.
 
 ```ts
-import { mockCtx, recordingDb, testTransformer } from "@etl-js/testing";
+const calls: { sql: string; params: readonly unknown[] }[] = [];
+const db = {
+  async query(sql: string, params: readonly unknown[] = []) {
+    calls.push({ sql, params });
+    return [{ codice: "COD-1", id: 11 }];
+  },
+};
 
-test("una sola interrogazione per lotto, e nessun valore dentro l'SQL", async () => {
-  const db = recordingDb(() => [{ codice: "COD-1", id: 11 }]);
-
-  const result = await testTransformer(plugin, {
-    rows: [{ codice: "COD-1" }, { codice: "COD-2" }],
-    config: { db: "database", table: "anagrafica", on: ["codice"], select: "id" },
-    ctx: mockCtx({ databases: { database: db } }),
-  });
-
-  expect(db.calls).toHaveLength(1);
-  expect(db.calls[0].sql).toContain('"codice" = ANY($1)');
-  expect(db.calls[0].sql).not.toContain("COD-1");   // i valori sono parametri
-  expect(db.calls[0].params).toEqual([["COD-1", "COD-2"]]);
-});
-```
-
-### Provare lo stato fra un lotto e l'altro
-
-Un transformer con cache o con `flush` va provato su piu' lotti, con lo **stesso** `ctx`: e' cosi'
-che lavora il motore.
-
-```ts
-const ctx = mockCtx({ databases: { database: db } });
-
-await testTransformer(plugin, {
-  batches: [
-    batchOf([{ codice: "COD-1" }], { runId: ctx.runId, offset: 0 }),
-    batchOf([{ codice: "COD-1" }], { runId: ctx.runId, offset: 1 }),
-  ],
-  config,
-  ctx,
+await plugin.impl.transform(lotto([{ codice: "COD-1" }, { codice: "COD-2" }]), config, {
+  ...ctxFinto,
+  db: () => db,
 });
 
-expect(db.calls).toHaveLength(1);   // il secondo lotto ha usato la cache del run
+expect(calls).toHaveLength(1);                      // una sola, per due righe
+expect(calls[0].sql).toContain('"codice" = ANY($1)');
+expect(calls[0].sql).not.toContain("COD-1");        // i valori sono parametri (I7)
 ```
 
-### Cosa offre l'harness
+**Lo stato fra un lotto e l'altro.** Un plugin con cache o con `flush` va provato su piu' lotti con
+lo **stesso** `ctx`, perche' e' cosi' che lavora il motore: `ctx.runId` e' la chiave con cui tenere
+e liberare la memoria di un run.
 
-| Funzione | A cosa serve |
-|----------|--------------|
-| `testTransformer(plugin, caso)` | esegue `transform` su uno o piu' lotti e poi `flush`, come il motore |
-| `mockCtx({ databases, secrets, runId, signal, logger })` | il `Ctx` di prova; **non** ha `dbWrite`, quindi un transformer non puo' scrivere (I4) |
-| `recordingDb(rispondi)` | database finto che registra ogni `query` in `.calls` |
-| `recordingLogger()` | logger che ricorda messaggi e campi in `.lines` |
-| `batchOf(rows, meta)` | costruisce un lotto con meta sensati |
+**I casi tristi.** Riga che non corrisponde, valore non convertibile, campo assente: ognuno deve
+produrre un `Failed` col suo `code`, la sua `severity` e un `reason` che nomina il campo e il valore.
+E' quello che finira' nel file di scarto, e lo leggera' un operatore.
 
-`mockCtx` accetta `inputs` per `ctx.openInput`, `databases` per `ctx.db`, `secrets`, `runId`,
-`signal` e `logger`. Chiedere qualcosa che il test non ha dichiarato produce un errore che dice
-esattamente cosa aggiungere, invece di un `undefined` silenzioso.
+### L'harness interno
+
+Il repository ha un harness (`testTransformer`, `mockCtx`, `recordingDb`) che fa esattamente le cose
+qui sopra con meno cerimonie. **Non e' pubblicato su npm**, quindi da un pacchetto tuo non lo puoi
+importare: le venti righe di `ctxFinto` qui sopra sono l'equivalente, e non hanno dipendenze.
+
+Se lo vuoi come pacchetto, e' una richiesta legittima: si pubblica il giorno che qualcuno la fa,
+non prima.
 
 ## Le regole che un plugin non puo' violare
 

@@ -47,7 +47,7 @@ credenziali ne' righe intere.
 | Codice | Quando | `retryable` |
 |---|---|:---:|
 | `CONFIG_INVALID` | una config non rispetta lo schema del plugin | no |
-| `PLUGIN_NOT_FOUND` | il plugin non e' registrato ne' installabile per nome | no |
+| `PLUGIN_NOT_FOUND` | la Definition cita un plugin che non e' stato collegato con `use()` | no |
 | `PROTOCOL_MISMATCH` | il plugin parla un protocollo diverso dal motore | no |
 | `READ_FAILED` | il reader e' fallito mentre leggeva | dipende |
 | `TRANSFORM_FAILED` | un transformer e' fallito su un lotto | no |
@@ -227,7 +227,7 @@ per il risultato e il comando si puo' mettere in pipe:
 | Codice | Cosa conviene fare |
 |---|---|
 | `CONFIG_INVALID` | correggere la Definition; non riprovare |
-| `PLUGIN_NOT_FOUND` | installare il pacchetto che l'errore suggerisce |
+| `PLUGIN_NOT_FOUND` | collegare il plugin: `engine.use(...)`. L'errore elenca quelli disponibili |
 | `PROTOCOL_MISMATCH` | aggiornare il plugin o il motore |
 | `TOO_MANY_FAILED` | guardare il file di scarto: di solito e' il file del flusso, non la config |
 | `READ_FAILED` retryable | riprovare piu' tardi: la sorgente non era raggiungibile |

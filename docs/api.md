@@ -3,6 +3,9 @@
 Tutto cio' che serve per usare `etl-js` da un altro programma. Le firme sono quelle vere: se qualcosa
 qui non combacia col codice, e' un bug della documentazione.
 
+Il percorso normale e' `createEngine()`. Tutto il resto - `run`, `Registry`, i provider - e' il
+livello sotto, utile quando l'applicazione ha esigenze sue.
+
 ```ts
 import {
   createEngine, run, validate, describePlugin, listPlugins, preview,
@@ -45,11 +48,15 @@ l'engine.
 
 ## `run(definition, ctx, options?)`
 
-Esegue un'importazione. E' l'unica funzione che fa qualcosa.
+Il livello sotto `createEngine`: esegue un'importazione con un `Registry` che costruisci tu.
 
 ```ts
-const result: RunResult = await run(definition, ctx, options);
+const registry = new Registry().register(csv).register(postgres);
+const result: RunResult = await run(definition, ctx, { registry });
 ```
+
+`engine.run(...)` e' esattamente questa chiamata col registry dell'engine. Serve direttamente quando
+il registry lo gestisce gia' l'applicazione, per esempio uno per tenant tenuto in cache.
 
 ### `ctx` — quello che fornisci tu
 
@@ -182,23 +189,6 @@ molti (`etl-js/transforms` ne porta cinque).
 
 `defaultRegistry` e' l'istanza di processo, usata quando non ne passi una. Nella maggior parte dei
 casi non serve toccare `Registry` direttamente: `createEngine()` ne costruisce una e la gestisce.
-
-## Caricare i plugin a runtime
-
-Non c'e', nel v1: i plugin si collegano con `use()`, esplicitamente.
-
-La risoluzione per nome da npm (`loadPlugin`, `createLoader`, i prefissi `@etl-js/plugin-`) esisteva
-quando il progetto era un monorepo di pacchetti separati. Con un pacchetto unico non ci sono
-pacchetti da risolvere, e la complessita' non la usava nessuno. Torna quando si progetta la GUI o il
-multi-tenant, dove serve davvero caricare cio' che l'utente ha installato; il codice di partenza sta
-nella storia git.
-
-Nel frattempo, un plugin di terzi si usa cosi':
-
-```ts
-import maiuscolo from "@acme/etl-plugin-maiuscolo";
-const engine = createEngine().use(csv).use(maiuscolo).use(postgres);
-```
 
 ## `createFileInput(options?)`
 

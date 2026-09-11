@@ -5,8 +5,8 @@ un'applicazione piu' grande. Legge una sorgente, trasforma le righe, le scrive i
 transazionale, e racconta a chi la usa che cosa e' successo.
 
 Il caso d'uso che ne ha guidato ogni scelta: far confluire file CSV di formati diversi in una
-tabella unica, collegandoli a dati gia' presenti su Postgres. **Un flusso non ha mai codice
-proprio: ha un file di configurazione JSON.**
+tabella unica, collegandoli a dati gia' presenti su Postgres. **Un flusso non ha mai codice proprio:
+ha un file di configurazione JSON.**
 
 ## Da dove cominciare
 
@@ -23,24 +23,40 @@ proprio: ha un file di configurazione JSON.**
 Documenti di progetto: [gli invarianti e le regole di lavoro](../CLAUDE.md), [lo stato delle
 fasi](piano.md).
 
+## In tre righe
+
+```ts
+import { createEngine } from "etl-js";
+import csv from "etl-js/csv";
+import postgres from "etl-js/postgres";
+
+const engine = createEngine().use(csv).use(postgres);
+const result = await engine.run(definition, ctx);
+```
+
+Colleghi i plugin che vuoi, passi una Definition e un contesto, ottieni un `RunResult`.
+
 ## La mappa in una figura
 
 ```
-  Definition (JSON)                        Ctx (dall'host)
-        |                                        |
-        |                            openInput / db / dbWrite / secretRef
-        v                                        |
-   core.run() ------------------------------------
-        |
-        |   reader          transformer*              writer
-        +--> csv ---Batch--> filter, rename, cast ---> postgres
-             (streaming)     lookup, validate,          (transazione)
-                             default
-                                |
-                                +--> Failed[] --> eventi --> file di scarto
+   i plugin li colleghi tu                 il contesto lo fornisci tu
+   createEngine().use(csv).use(postgres)   openInput / db / dbWrite / secretRef / log / signal
+                  |                                      |
+                  v                                      v
+             engine.run(definition, ctx) ----------------+
+                  |
+                  |   reader          transformer*              writer
+                  +--> csv ---Batch--> filter, rename, cast ---> postgres
+                       (streaming)     lookup, validate,          (transazione)
+                                       default
+                                          |
+                                          +--> Failed[] --> eventi --> file di scarto
 
-   RunResult { read, written, failed, aborted, durationMs }
+             RunResult { read, written, failed, aborted, durationMs }
 ```
+
+Il motore non conosce nessuno dei nomi scritti li' dentro: li riceve da `use()` e li cerca per
+`manifest.name` quando una Definition li cita.
 
 ## Gli entry point
 
@@ -57,8 +73,11 @@ import proibito per assicurarsi che il controllo funzioni davvero.
 | `etl-js/lookup` | `lookup` | contracts, zod |
 | `etl-js/postgres` | writer Postgres | contracts, zod |
 
-Il comando `etl-js` arriva col pacchetto. L'harness di prova (`packages/testing`) non e' pubblicato:
-si aggiunge quando qualcuno lo chiede davvero.
+Il comando `etl-js` arriva col pacchetto. `pg` e `pg-copy-streams` sono **opzionali**: senza Postgres
+tutto il resto funziona.
+
+**Un entry point non e' un plugin.** `exports` dice cosa puoi importare, `use()` dice cosa partecipa
+a un'importazione: `etl-js/transforms` e' un import solo che porta **cinque** plugin.
 
 ## Le nove regole che spiegano tutto il resto
 
@@ -72,5 +91,5 @@ Ogni scelta strana di questa libreria discende da uno di questi vincoli. Sono sp
 5. **Mai una query per riga.** I lookup sono in batch.
 6. **Le connessioni le fornisce il core**, i plugin non le aprono e non vedono credenziali.
 7. **SQL sempre parametrizzato**, identificatori escapati, operatori in whitelist.
-8. **Un flusso = un file di config.** Un nome di un flusso nel codice significa che manca un parametro.
-9. **Le dipendenze puntano verso `contracts`.**
+8. **Un flusso = un file di config.** Un nome di flusso nel codice significa che manca un parametro.
+9. **Le dipendenze puntano verso i contratti.**

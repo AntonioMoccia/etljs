@@ -26,7 +26,7 @@ Non a parole: ogni invariante ha qualcosa che fallisce se lo violi.
 | Invariante | Cosa lo verifica |
 |------------|------------------|
 | I1 config = dato | `core.validate()` lavora su JSON puro; `describe()` produce JSON Schema |
-| I2 il core non conosce i plugin | `test/boundaries.test.ts` pianta un import proibito in `core` e pretende che depcruise fallisca; `test/loader-npm.test.ts` esegue l'esempio con un registry **vuoto** |
+| I2 il core non conosce i plugin | `test/integrazione/boundaries.test.ts` pianta un import proibito in `src/core` e pretende che depcruise fallisca; `test/integrazione/dist.test.ts` esegue l'esempio sul compilato coi plugin collegati dall'esterno |
 | I3 batch/async/serializzabili | le date escono come stringhe ISO, non come `Date` |
 | I4 transformer senza effetti | `pipeline.test.ts` verifica che il `ctx` dei transformer **non abbia** `dbWrite`; il pool di lettura si connette con `default_transaction_read_only=on` |
 | I5 mai una query per riga | `lookup.test.ts` conta le interrogazioni: una per lotto, zero se il lotto e' in cache |
@@ -63,7 +63,7 @@ Tre cambi arrivati dopo il piano, tutti su richiesta e tutti con la suite verde 
 - **`ctx.openInput`**: il reader non apre piu' file da se'. `plugin-csv` e' passato a `csv-parse` e
   `config.path` e' diventato `config.input`.
 - **`etl-js/transforms`**: i cinque transformer di base in un pacchetto solo, e
-  `PluginModule.plugins` perche' il loader sappia gestirlo. `lookup` e' rimasto separato.
+  `PluginModule.plugins`, cosi' un modulo puo' esportarne piu' d'uno. `lookup` e' rimasto separato.
 - **`EtlError`** al posto di `IngestError`.
 - **Da monorepo a pacchetto singolo**: i sei workspace di libreria diventano sei cartelle di `src/`
   in un pacchetto `etl-js` con un entry point per cartella, e la CLI entra come `bin`. I confini
