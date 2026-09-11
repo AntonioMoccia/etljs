@@ -1,5 +1,5 @@
 {
-  "name": "etl-js",
+  "name": "etljs",
   "version": "0.1.0",
   "type": "module",
   "description": "Motore di importazione dati a plugin: libreria senza stato",
@@ -18,25 +18,25 @@
       "types": "./dist/contracts/index.d.ts",
       "import": "./dist/contracts/index.js"
     },
-    "./csv": {
-      "types": "./dist/csv/index.d.ts",
-      "import": "./dist/csv/index.js"
+    "./csv-reader": {
+      "types": "./dist/csv-reader/index.d.ts",
+      "import": "./dist/csv-reader/index.js"
     },
-    "./postgres": {
-      "types": "./dist/postgres/index.d.ts",
-      "import": "./dist/postgres/index.js"
+    "./postgres-writer": {
+      "types": "./dist/postgres-writer/index.d.ts",
+      "import": "./dist/postgres-writer/index.js"
     },
-    "./transforms": {
-      "types": "./dist/transforms/index.d.ts",
-      "import": "./dist/transforms/index.js"
+    "./transformers": {
+      "types": "./dist/transformers/index.d.ts",
+      "import": "./dist/transformers/index.js"
     },
-    "./lookup": {
-      "types": "./dist/lookup/index.d.ts",
-      "import": "./dist/lookup/index.js"
+    "./lookup-transformer": {
+      "types": "./dist/lookup-transformer/index.d.ts",
+      "import": "./dist/lookup-transformer/index.js"
     }
   },
   "bin": {
-    "etl-js": "./dist/cli/bin.js"
+    "etljs": "./dist/cli/bin.js"
   },
   "files": [
     "dist"

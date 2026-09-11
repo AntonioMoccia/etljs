@@ -1,4 +1,4 @@
-# etl-js
+# etljs
 
 Motore di importazione dati a plugin, **libreria senza stato** destinata a essere incorporata in un
 software piu' grande. Caso d'uso guida: importare file CSV di formati diversi, collegandoli
@@ -41,17 +41,17 @@ I2 e I9 sono imposti da **dependency-cruiser** (`npm run check:boundaries`), non
 
 ## Struttura
 
-Un solo pacchetto npm, `etl-js`, con un entry point per cartella:
+Un solo pacchetto npm, `etljs`, con un entry point per cartella:
 
 ```
 src/
-  contracts/    etl-js/contracts    tipi + costanti/utility pure, ZERO dipendenze
-  core/         etl-js              registry, engine, pipeline, validate, describe, preview
-  csv/          etl-js/csv          reader
-  postgres/     etl-js/postgres     writer: append, upsert, replace-by
-  transforms/   etl-js/transforms   libreria standard: cast, filter, default, rename, validate
-  lookup/       etl-js/lookup       transformer (cardine): collega a dati gia' presenti, in batch
-  cli/          il comando `etl-js` (campo "bin"); e' l'unico posto che nomina i plugin
+  contracts/            etljs/contracts             tipi + utility pure, ZERO dipendenze
+  core/                 etljs                       engine, pipeline, validate, describe, preview
+  csv-reader/           etljs/csv-reader            reader
+  postgres-writer/      etljs/postgres-writer       writer: append, upsert, replace-by
+  transformers/         etljs/transformers          cast, filter, default, rename, validate
+  lookup-transformer/   etljs/lookup-transformer    collega a dati gia' presenti, in batch
+  cli/                  il comando `etljs` (campo "bin"); l'unico posto che nomina i plugin
 packages/
   testing/      harness di prova. Non pubblicato, non esportato come subpath
 test/           speculare a src/, piu' test/integrazione/
@@ -71,7 +71,7 @@ conoscere alcun plugin per nome (I2).
 **Convenzione dei nomi: `<nome><Tipo>`.** Ogni plugin si esporta come `csvReader`,
 `postgresWriter`, `castTransformer`. Niente default export e niente `plugin`
 generico: `use(csvReader)` dice **cosa** entra nella pipeline e **con che ruolo**,
-`use(csv)` no. `etl-js/transforms` esporta anche `transformers`, l'elenco dei
+`use(csv)` no. `etljs/transformers` esporta anche `transformers`, l'elenco dei
 cinque, per `useAll()`.
 
 ## Contratti
@@ -132,7 +132,7 @@ importa `node:fs`**: i byte glieli da' il core tramite `ctx.openInput` (I6).
   salvato UTF-8-BOM ma dichiarato latin1.
 - **Niente caricamento dinamico dei plugin nel v1.** I plugin si collegano con
   `createEngine().use(...)`, esplicitamente. La risoluzione per nome da npm
-  (`loadPlugin`, `createLoader`, i prefissi `@etl-js/plugin-`) e' stata rimossa: con un
+  (`loadPlugin`, `createLoader`, i prefissi sui nomi dei pacchetti) e' stata rimossa: con un
   pacchetto unico non ci sono pacchetti da risolvere, e nessuno la usava. Torna quando si
   progetta la GUI o il multi-tenant, dove serve davvero caricare cio' che l'utente installa;
   il codice di partenza sta nella storia git, commit "Fase 3".

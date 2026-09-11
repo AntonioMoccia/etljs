@@ -1,6 +1,6 @@
 # Limiti
 
-Cosa `etl-js` **non** fa, perche', e come si fa comunque. Sono i confini scelti: sapere dove sono
+Cosa `etljs` **non** fa, perche', e come si fa comunque. Sono i confini scelti: sapere dove sono
 serve piu' di una lista di funzionalita'.
 
 ## La forma di un run e' fissa
@@ -89,7 +89,7 @@ giro due versioni della stessa cosa. E' lo stesso vincolo di Node-RED e n8n, per
 Nel frattempo un plugin di terzi si usa come qualunque dipendenza:
 
 ```ts
-import { maiuscoloTransformer } from "@acme/etl-plugin-maiuscolo";
+import { maiuscoloTransformer } from "@acme/etljs-plugin-maiuscolo";
 const engine = createEngine().use(csvReader).use(maiuscoloTransformer).use(postgresWriter);
 ```
 
@@ -144,6 +144,6 @@ PG_TEST_URL=postgres://postgres:postgres@localhost:5432/postgres npm test
 
 ## In sintesi
 
-`etl-js` fa una cosa: **prendere un file di un flusso, renderlo dati, e metterlo in una tabella in
+`etljs` fa una cosa: **prendere un file di un flusso, renderlo dati, e metterlo in una tabella in
 modo ripetibile**. Tutto cio' che sta prima (chi decide quando) e dopo (chi promuove i dati nel
 modello di dominio) e' dell'applicazione che la usa. Questa e' la scelta, non un residuo da colmare.

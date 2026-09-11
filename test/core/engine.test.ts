@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import type { Row } from "etl-js/contracts";
-import { Registry, createEngine, run } from "etl-js";
+import type { Row } from "etljs/contracts";
+import { Registry, createEngine, run } from "etljs";
 import { definition, hostCtx, pickyTransformer, readerOf, writerOf } from "./fakes.js";
 
 /**

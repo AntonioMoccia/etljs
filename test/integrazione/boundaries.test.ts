@@ -46,21 +46,21 @@ describe("confini architetturali", () => {
   }, 60_000);
 
   test("un plugin che importa il core fa fallire il controllo (I9)", async () => {
-    await plantProbe("src/csv", 'import "../core/index.js";\nexport const probe = 1;\n');
+    await plantProbe("src/csv-reader", 'import "../core/index.js";\nexport const probe = 1;\n');
     const result = await cruise();
     expect(result.code).not.toBe(0);
     expect(result.output).toContain("plugin-dipende-solo-da-contracts");
   }, 60_000);
 
   test("un plugin che importa un altro plugin fa fallire il controllo (I9)", async () => {
-    await plantProbe("src/csv", 'import "../postgres/index.js";\nexport const probe = 1;\n');
+    await plantProbe("src/csv-reader", 'import "../postgres-writer/index.js";\nexport const probe = 1;\n');
     const result = await cruise();
     expect(result.code).not.toBe(0);
     expect(result.output).toContain("plugin-dipende-solo-da-contracts");
   }, 60_000);
 
   test("il core che importa un plugin fa fallire il controllo (I2)", async () => {
-    await plantProbe("src/core", 'import "../csv/index.js";\nexport const probe = 1;\n');
+    await plantProbe("src/core", 'import "../csv-reader/index.js";\nexport const probe = 1;\n');
     const result = await cruise();
     expect(result.code).not.toBe(0);
     expect(result.output).toContain("core-non-conosce-i-plugin");

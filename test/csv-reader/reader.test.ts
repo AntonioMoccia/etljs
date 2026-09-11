@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import type { Batch, ByteStream, Ctx, Logger } from "etl-js/contracts";
-import { csvReader as plugin } from "etl-js/csv";
+import type { Batch, ByteStream, Ctx, Logger } from "etljs/contracts";
+import { csvReader as plugin } from "etljs/csv-reader";
 
 const silent: Logger = {
   debug: () => {},

@@ -5,7 +5,7 @@ Dal repository appena clonato al primo import, con e senza database.
 ## Installare
 
 ```bash
-npm install etl-js
+npm install etljs
 ```
 
 Node 18.18 o superiore. `pg` e `pg-copy-streams` sono dipendenze **opzionali**: senza Postgres tutto
@@ -14,10 +14,10 @@ il resto funziona, e te ne accorgi solo quando provi a scrivere davvero.
 ## Il primo import, da codice
 
 ```ts
-import { createEngine, createFileInput } from "etl-js";
-import { csvReader } from "etl-js/csv";
-import { postgresWriter } from "etl-js/postgres";
-import { transformers } from "etl-js/transforms";
+import { createEngine, createFileInput } from "etljs";
+import { csvReader } from "etljs/csv-reader";
+import { postgresWriter } from "etljs/postgres-writer";
+import { transformers } from "etljs/transformers";
 
 const engine = createEngine().use(csvReader).use(postgresWriter).useAll(transformers);
 
@@ -42,11 +42,11 @@ Tre cose, e sono tutto il modello:
 
 ## Il primo import, da riga di comando
 
-Il pacchetto porta con se' il comando `etl-js`, con tutti i plugin gia' collegati:
+Il pacchetto porta con se' il comando `etljs`, con tutti i plugin gia' collegati:
 
 ```bash
-npx etl-js plugins                      # cosa e' collegato, coi manifest completi
-npx etl-js describe csv                 # il JSON Schema della config del reader CSV
+npx etljs plugins                      # cosa e' collegato, coi manifest completi
+npx etljs describe csv                 # il JSON Schema della config del reader CSV
 ```
 
 `describe` e' la stessa cosa che leggera' una GUI per disegnare il modulo di configurazione: non
@@ -59,7 +59,7 @@ npm install && npm run build
 node dist/cli/bin.js plugins
 ```
 
-Nel resto della pagina `etl` sta per `npx etl-js` (o `node dist/cli/bin.js`).
+Nel resto della pagina `etl` sta per `npx etljs` (o `node dist/cli/bin.js`).
 
 ## Un import in cinque minuti
 
@@ -222,11 +222,11 @@ etl run flussi/acme.json --input /var/spool/acme/2026-02-10.csv
 L'esempio di prima senza database. Con Postgres, gli eventi e un vero logger diventa cosi':
 
 ```ts
-import { createEngine, createFileInput, createPostgresProvider } from "etl-js";
-import { csvReader } from "etl-js/csv";
-import { postgresWriter } from "etl-js/postgres";
-import { lookupTransformer } from "etl-js/lookup";
-import { transformers } from "etl-js/transforms";
+import { createEngine, createFileInput, createPostgresProvider } from "etljs";
+import { csvReader } from "etljs/csv-reader";
+import { postgresWriter } from "etljs/postgres-writer";
+import { lookupTransformer } from "etljs/lookup-transformer";
+import { transformers } from "etljs/transformers";
 
 const provider = await createPostgresProvider({
   principale: { connectionString: process.env.DATABASE_URL! },

@@ -1,4 +1,4 @@
-# etl-js
+# etljs
 
 Motore di importazione dati a plugin: libreria senza stato, in TypeScript, pensata per essere
 incorporata in un software piu' grande. Il caso d'uso che ne guida ogni scelta e' far confluire
@@ -9,14 +9,14 @@ file CSV di formati diversi in una tabella unica, collegandoli a dati gia' prese
 ## Provalo
 
 ```bash
-npm install etl-js
+npm install etljs
 ```
 
 ```ts
-import { createEngine } from "etl-js";
-import { csvReader } from "etl-js/csv";
-import { postgresWriter } from "etl-js/postgres";
-import { transformers } from "etl-js/transforms";
+import { createEngine } from "etljs";
+import { csvReader } from "etljs/csv-reader";
+import { postgresWriter } from "etljs/postgres-writer";
+import { transformers } from "etljs/transformers";
 
 const engine = createEngine().use(csvReader).use(postgresWriter).useAll(transformers);
 const result = await engine.run(definition, ctx);
@@ -25,11 +25,11 @@ const result = await engine.run(definition, ctx);
 Installare il pacchetto porta con se' anche il comando:
 
 ```bash
-npx etl-js plugins                        # cosa e' collegato
-npx etl-js describe csv                   # JSON Schema della config
-npx etl-js validate clienti/acme.json     # cosa non va, tutto insieme
-npx etl-js preview clienti/acme.json -n 5
-npx etl-js run clienti/acme.json --dry-run
+npx etljs plugins                        # cosa e' collegato
+npx etljs describe csv                   # JSON Schema della config
+npx etljs validate clienti/acme.json     # cosa non va, tutto insieme
+npx etljs preview clienti/acme.json -n 5
+npx etljs run clienti/acme.json --dry-run
 ```
 
 Dal repository, invece che dal pacchetto installato:
@@ -42,7 +42,7 @@ node dist/cli/bin.js run examples/acme-fase0.json --dry-run
 Per scrivere davvero su Postgres, e tenere le righe rifiutate:
 
 ```bash
-npx etl-js run clienti/acme.json --db principale=env:DATABASE_URL --rejects scarti.csv
+npx etljs run clienti/acme.json --db principale=env:DATABASE_URL --rejects scarti.csv
 ```
 
 ## Come funziona
@@ -56,28 +56,28 @@ Definition (JSON)
 ```
 
 Il `core` non conosce nessun plugin: li riceve in una `Registry` o li carica per nome da npm. Il
-grafo delle dipendenze punta tutto verso `etl-js/contracts`, e dependency-cruiser lo verifica a ogni
+grafo delle dipendenze punta tutto verso `etljs/contracts`, e dependency-cruiser lo verifica a ogni
 `npm run check`.
 
 **Un pacchetto e' un'unita' di distribuzione, un plugin un'unita' di configurazione: non coincidono.**
-`etl-js/transforms` porta cinque plugin (`cast`, `filter`, `default`, `rename`, `validate`)
+`etljs/transformers` porta cinque plugin (`cast`, `filter`, `default`, `rename`, `validate`)
 perche' si installano sempre insieme; nelle Definition restano cinque nomi distinti e ognuno tiene la
 propria versione. Un pacchetto dichiara i suoi con `export const plugins: Plugin[]`.
 
 ## Gli entry point
 
-Un solo pacchetto, `etl-js`, con un import per area:
+Un solo pacchetto, `etljs`, con un import per area:
 
 | Import | Cosa contiene |
 |---|---|
-| `etl-js` | `createEngine`, `run`, `validate`, `describe`, `preview`, `Registry`, eventi, driver Postgres |
-| `etl-js/contracts` | tipi, `PROTOCOL_VERSION`, `EtlError`, utility SQL. **Zero dipendenze** |
-| `etl-js/csv` | reader CSV in streaming |
-| `etl-js/postgres` | writer con `append`, `upsert`, `replace-by` |
-| `etl-js/transforms` | la libreria standard: `cast`, `filter`, `default`, `rename`, `validate` |
-| `etl-js/lookup` | collega le righe a dati gia' sul database, in batch |
+| `etljs` | `createEngine`, `run`, `validate`, `describe`, `preview`, `Registry`, eventi, driver Postgres |
+| `etljs/contracts` | tipi, `PROTOCOL_VERSION`, `EtlError`, utility SQL. **Zero dipendenze** |
+| `etljs/csv-reader` | reader CSV in streaming |
+| `etljs/postgres-writer` | writer con `append`, `upsert`, `replace-by` |
+| `etljs/transformers` | la libreria standard: `cast`, `filter`, `default`, `rename`, `validate` |
+| `etljs/lookup-transformer` | collega le righe a dati gia' sul database, in batch |
 
-Il comando `etl-js` arriva con il pacchetto.
+Il comando `etljs` arriva con il pacchetto.
 
 ## Un flusso, un file
 
@@ -117,10 +117,10 @@ in piu' e' un secondo file JSON, non un secondo pacchetto.
 ## Usarla da un altro programma
 
 ```ts
-import { createEngine, createFileInput, createPostgresProvider } from "etl-js";
-import { csvReader } from "etl-js/csv";
-import { postgresWriter } from "etl-js/postgres";
-import { transformers } from "etl-js/transforms";
+import { createEngine, createFileInput, createPostgresProvider } from "etljs";
+import { csvReader } from "etljs/csv-reader";
+import { postgresWriter } from "etljs/postgres-writer";
+import { transformers } from "etljs/transformers";
 
 const provider = await createPostgresProvider({
   principale: { connectionString: process.env.DATABASE_URL! },

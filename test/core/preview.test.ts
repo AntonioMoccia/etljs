@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { Registry, preview } from "etl-js";
+import { Registry, preview } from "etljs";
 import { definition, hostCtx, pickyTransformer, readerOf, writerOf } from "./fakes.js";
 
 describe("preview", () => {

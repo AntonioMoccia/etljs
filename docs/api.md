@@ -1,6 +1,6 @@
 # API
 
-Tutto cio' che serve per usare `etl-js` da un altro programma. Le firme sono quelle vere: se qualcosa
+Tutto cio' che serve per usare `etljs` da un altro programma. Le firme sono quelle vere: se qualcosa
 qui non combacia col codice, e' un bug della documentazione.
 
 Il percorso normale e' `createEngine()`. Tutto il resto - `run`, `Registry`, i provider - e' il
@@ -10,11 +10,11 @@ livello sotto, utile quando l'applicazione ha esigenze sue.
 import {
   createEngine, run, validate, describePlugin, listPlugins, preview,
   Registry, createFileInput, createPostgresProvider, withRetry,
-} from "etl-js";
-import { csvReader } from "etl-js/csv";
-import { postgresWriter } from "etl-js/postgres";
-import { transformers } from "etl-js/transforms";
-import { lookupTransformer } from "etl-js/lookup";
+} from "etljs";
+import { csvReader } from "etljs/csv-reader";
+import { postgresWriter } from "etljs/postgres-writer";
+import { transformers } from "etljs/transformers";
+import { lookupTransformer } from "etljs/lookup-transformer";
 ```
 
 ## `createEngine()`
@@ -41,11 +41,11 @@ const result = await engine.run(definition, ctx);
 
 | Import | Tipo |
 |---|---|
-| `import { csvReader } from "etl-js/csv"` | reader |
-| `import { postgresWriter } from "etl-js/postgres"` | writer |
-| `import { lookupTransformer } from "etl-js/lookup"` | transformer |
-| `import { castTransformer, filterTransformer, ... } from "etl-js/transforms"` | transformer |
-| `import { transformers } from "etl-js/transforms"` | i cinque insieme, per `useAll` |
+| `import { csvReader } from "etljs/csv-reader"` | reader |
+| `import { postgresWriter } from "etljs/postgres-writer"` | writer |
+| `import { lookupTransformer } from "etljs/lookup-transformer"` | transformer |
+| `import { castTransformer, filterTransformer, ... } from "etljs/transformers"` | transformer |
+| `import { transformers } from "etljs/transformers"` | i cinque insieme, per `useAll` |
 
 Non ci sono default export: `use(csvReader)` dice cosa entra nella pipeline e con che ruolo, `use(csv)`
 no. E' la stessa convenzione che conviene seguire in un plugin tuo.
@@ -198,7 +198,7 @@ registry.clear();
 
 `register` verifica il protocollo e rifiuta due plugin diversi con lo stesso nome. Il registry
 indicizza per **`manifest.name`**, non per nome del pacchetto o del modulo: un modulo puo' esportarne
-molti (`etl-js/transforms` ne porta cinque).
+molti (`etljs/transformers` ne porta cinque).
 
 `defaultRegistry` e' l'istanza di processo, usata quando non ne passi una. Nella maggior parte dei
 casi non serve toccare `Registry` direttamente: `createEngine()` ne costruisce una e la gestisce.
@@ -283,7 +283,7 @@ dei dati, il posto e' il writer.
 
 ## Tipi
 
-Dal pacchetto `etl-js/contracts`:
+Dal pacchetto `etljs/contracts`:
 
 | Tipo | Cos'e' |
 |---|---|

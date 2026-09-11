@@ -22,9 +22,9 @@ import { builtinPlugins } from "./builtins.js";
 import { jsonLogger } from "./logger.js";
 import { RejectFile } from "./rejects.js";
 
-const USAGE = `etl-js - importazione dati guidata da una Definition JSON
+const USAGE = `etljs - importazione dati guidata da una Definition JSON
 
-  etl-js run <definition.json> [opzioni]
+  etljs run <definition.json> [opzioni]
       --input <file>        sovrascrive source.config.input
       --dry-run             esegue tutto tranne la scrittura
       --limit <n>           si ferma dopo n righe lette
@@ -32,11 +32,11 @@ const USAGE = `etl-js - importazione dati guidata da una Definition JSON
       --log <livello>       debug | info | warn | error   (default: info)
       --rejects <file.csv>  scrive le righe scartate col motivo, man mano
 
-  etl-js plugins            elenca i plugin disponibili con il loro manifest
-  etl-js describe <plugin>  stampa il JSON Schema della config di un plugin
-  etl-js validate <def.json>
+  etljs plugins             elenca i plugin disponibili con il loro manifest
+  etljs describe <plugin>   stampa il JSON Schema della config di un plugin
+  etljs validate <def.json>
                             controlla una Definition senza eseguirla
-  etl-js preview <def.json> [-n <righe>] [--input <file>]
+  etljs preview <def.json> [-n <righe>] [--input <file>]
                             mostra cosa esce dalle prime righe, senza scrivere
 
 Le credenziali non si passano a riga di comando: --db accetta anche

@@ -5,14 +5,14 @@
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "etl-js": ["src/core/index.ts"],
-      "etl-js/contracts": ["src/contracts/index.ts"],
-      "etl-js/csv": ["src/csv/index.ts"],
-      "etl-js/postgres": ["src/postgres/index.ts"],
-      "etl-js/transforms": ["src/transforms/index.ts"],
-      "etl-js/lookup": ["src/lookup/index.ts"],
-      "etl-js/cli": ["src/cli/index.ts"],
-      "@etl-js/testing": ["packages/testing/src/index.ts"]
+      "etljs": ["src/core/index.ts"],
+      "etljs/contracts": ["src/contracts/index.ts"],
+      "etljs/csv-reader": ["src/csv-reader/index.ts"],
+      "etljs/postgres-writer": ["src/postgres-writer/index.ts"],
+      "etljs/transformers": ["src/transformers/index.ts"],
+      "etljs/lookup-transformer": ["src/lookup-transformer/index.ts"],
+      "etljs/cli": ["src/cli/index.ts"],
+      "@etljs/testing": ["packages/testing/src/index.ts"]
     }
   },
   "include": [
@@ -20,6 +20,7 @@
     "test/**/*.ts",
     "tools/**/*.ts",
     "packages/testing/src/**/*.ts",
+    "packages/testing/test/**/*.ts",
     "vitest.config.ts",
     "vitest.docs.config.ts"
   ]

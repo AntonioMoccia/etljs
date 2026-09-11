@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import type { Batch, Row } from "etl-js/contracts";
-import { postgresWriter as plugin } from "etl-js/postgres";
+import type { Batch, Row } from "etljs/contracts";
+import { postgresWriter as plugin } from "etljs/postgres-writer";
 import { fakeTransaction, fakeWriterCtx } from "./helpers.js";
 
 function batch(rows: Row[], offset = 0): Batch {

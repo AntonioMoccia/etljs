@@ -1,5 +1,5 @@
 /**
- * @etl-js/core - il motore. Sa eseguire una Definition, non sa quali plugin
+ * etljs - il motore. Sa eseguire una Definition, non sa quali plugin
  * esistano: li riceve gia' pronti (Registry) o li carica per nome (fase 2).
  */
 export { run, type RunOptions } from "./pipeline.js";

@@ -1,3 +1,10 @@
+> **Documento storico, superato.** Propone un assetto - meta-pacchetto `etl-js`, `@etl-js/loader`
+> come pacchetto a se', plugin caricati per nome - che **non e' quello realizzato**. Il progetto ha
+> preso una strada diversa: un pacchetto unico `etljs` con subpath per area, plugin collegati
+> esplicitamente con `createEngine().use(...)` e nessun caricamento a runtime. I nomi di pacchetto
+> citati qui dentro non esistono piu'. Vedi [la documentazione](../../README.md) per com'e' adesso;
+> questo resta come registro delle alternative valutate.
+
 # Confini dei plugin e semplificazione del motore
 
 Data: 2026-09-10 (riscritto il 2026-09-11)

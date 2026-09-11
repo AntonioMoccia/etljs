@@ -1,8 +1,8 @@
 import type { Plugin } from "../contracts/index.js";
-import { csvReader } from "../csv/index.js";
-import { postgresWriter } from "../postgres/index.js";
-import { lookupTransformer } from "../lookup/index.js";
-import { transformers } from "../transforms/index.js";
+import { csvReader } from "../csv-reader/index.js";
+import { postgresWriter } from "../postgres-writer/index.js";
+import { lookupTransformer } from "../lookup-transformer/index.js";
+import { transformers } from "../transformers/index.js";
 
 /**
  * L'unico punto del progetto in cui dei plugin concreti vengono nominati.

@@ -1,5 +1,5 @@
 /**
- * @etl-js/contracts - la sola cosa che tutti i pacchetti hanno il permesso di
+ * etljs/contracts - la sola cosa che tutte le cartelle hanno il permesso di
  * conoscere (I9). Contiene tipi, costanti e utility pure: zero dipendenze.
  */
 export * from "./protocol.js";

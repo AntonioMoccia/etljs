@@ -117,7 +117,7 @@ export async function createPostgresProvider(
     const pool = new pg.Pool({
       connectionString: config.connectionString,
       max: config.max ?? (readOnly ? 4 : 2),
-      application_name: config.applicationName ?? "etl-js",
+      application_name: config.applicationName ?? "etljs",
       ...(options ? { options } : {}),
     });
     // Un errore su un client inattivo non deve abbattere il processo dell'host.

@@ -2,7 +2,7 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import type { Definition, Logger, Row } from "etl-js/contracts";
+import type { Definition, Logger, Row } from "etljs/contracts";
 import {
   Registry,
   createFileInput,
@@ -10,10 +10,10 @@ import {
   run,
   type DbProvider,
   type HostCtx,
-} from "etl-js";
-import { csvReader } from "etl-js/csv";
-import { postgresWriter } from "etl-js/postgres";
-import { castTransformer } from "etl-js/transforms";
+} from "etljs";
+import { csvReader } from "etljs/csv-reader";
+import { postgresWriter } from "etljs/postgres-writer";
+import { castTransformer } from "etljs/transformers";
 
 /**
  * I criteri della fase 7 contro un Postgres vero: ri-importare lo stesso piano

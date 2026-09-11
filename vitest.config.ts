@@ -8,14 +8,14 @@ const src = (path: string): string => fileURLToPath(new URL(path, import.meta.ur
 export default defineConfig({
   resolve: {
     alias: [
-      { find: /^etl-js$/, replacement: src("./src/core/index.ts") },
-      { find: /^etl-js\/contracts$/, replacement: src("./src/contracts/index.ts") },
-      { find: /^etl-js\/csv$/, replacement: src("./src/csv/index.ts") },
-      { find: /^etl-js\/postgres$/, replacement: src("./src/postgres/index.ts") },
-      { find: /^etl-js\/transforms$/, replacement: src("./src/transforms/index.ts") },
-      { find: /^etl-js\/lookup$/, replacement: src("./src/lookup/index.ts") },
-      { find: /^etl-js\/cli$/, replacement: src("./src/cli/index.ts") },
-      { find: /^@etl-js\/testing$/, replacement: src("./packages/testing/src/index.ts") },
+      { find: /^etljs$/, replacement: src("./src/core/index.ts") },
+      { find: /^etljs\/contracts$/, replacement: src("./src/contracts/index.ts") },
+      { find: /^etljs\/csv-reader$/, replacement: src("./src/csv-reader/index.ts") },
+      { find: /^etljs\/postgres-writer$/, replacement: src("./src/postgres-writer/index.ts") },
+      { find: /^etljs\/transformers$/, replacement: src("./src/transformers/index.ts") },
+      { find: /^etljs\/lookup-transformer$/, replacement: src("./src/lookup-transformer/index.ts") },
+      { find: /^etljs\/cli$/, replacement: src("./src/cli/index.ts") },
+      { find: /^@etljs\/testing$/, replacement: src("./packages/testing/src/index.ts") },
     ],
   },
   test: { environment: "node", include: ["test/**/*.test.ts", "packages/testing/test/**/*.test.ts"] },

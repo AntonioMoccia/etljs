@@ -1,5 +1,5 @@
 /**
- * @etl-js/plugin-transforms - i transformer di base.
+ * etljs/transformers - i transformer di base.
  *
  * Un pacchetto solo che ne contiene cinque: un pacchetto e' un'unita' di
  * distribuzione, un plugin un'unita' di configurazione, e questi cinque si

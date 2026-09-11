@@ -8,7 +8,7 @@
  *   contracts  <-- csv, postgres, transforms, lookup   (mai fra loro, mai core)
  *   contracts  <-- cli --> core --> (niente plugin)
  */
-const PLUGIN_DIRS = "csv|postgres|transforms|lookup";
+const PLUGIN_DIRS = "csv-reader|postgres-writer|transformers|lookup-transformer";
 
 module.exports = {
   forbidden: [

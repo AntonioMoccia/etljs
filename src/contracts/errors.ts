@@ -94,7 +94,7 @@ export interface ConfigIssue {
 /**
  * Errore di config uniforme per tutti i plugin. Sta qui e non in un pacchetto
  * di utilita' perche' ogni plugin ne ha bisogno e nessun plugin puo' dipendere
- * da altro che da @etl-js/contracts (I9). Non conosce Zod: riceve i rilievi
+ * da altro che dai contratti (I9). Non conosce Zod: riceve i rilievi
  * gia' appiattiti, cosi' resta a zero dipendenze.
  */
 export function configInvalid(plugin: string, issues: ConfigIssue[]): EtlError {

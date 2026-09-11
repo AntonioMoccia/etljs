@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import type { Batch, Transformer } from "@etl-js/contracts";
-import { batchOf, mockCtx, recordingDb, recordingLogger, testTransformer } from "@etl-js/testing";
+import type { Batch, Transformer } from "etljs/contracts";
+import { batchOf, mockCtx, recordingDb, recordingLogger, testTransformer } from "@etljs/testing";
 
 /** Transformer d'esempio: tiene le righe pari e accumula le dispari per il flush. */
 const esempio: Transformer = {

@@ -13,9 +13,9 @@ Ogni fase e' completa quando il suo criterio e' soddisfatto **e** `npm run check
 | 5 | `validate` e scarto: severity, provenienza, `maxFailedRatio`, file di scarto | file al 10% invalido -> import parziale; al 40% -> run annullato | fatta |
 | 6 | Errori ed eventi: `EtlError` classificato, eventi run, log strutturato, retry con jitter | un host ricostruisce avanzamento ed errori dai soli eventi | fatta |
 | 7 | Writer `replace-by`/`upsert`: staging + transazione | re-import per chiave non duplica; errore a meta' -> rollback totale | fatta |
-| 8 | Harness `@etl-js/testing`: `testTransformer`, `mockCtx` | i test dei plugin girano senza servizi esterni; esempi documentati | fatta |
+| 8 | Harness `@etljs/testing`: `testTransformer`, `mockCtx` | i test dei plugin girano senza servizi esterni; esempi documentati | fatta |
 
-Una deviazione dall'ordine: **`@etl-js/testing` e' stato costruito prima della fase 3**, non alla 8.
+Una deviazione dall'ordine: **`@etljs/testing` e' stato costruito prima della fase 3**, non alla 8.
 Sei plugin avevano bisogno dello stesso harness, e scriverlo sei volte per poi buttarlo non aveva senso.
 Alla fase 8 sono arrivati i suoi test e la documentazione.
 
@@ -62,11 +62,11 @@ Tre cambi arrivati dopo il piano, tutti su richiesta e tutti con la suite verde 
 
 - **`ctx.openInput`**: il reader non apre piu' file da se'. `plugin-csv` e' passato a `csv-parse` e
   `config.path` e' diventato `config.input`.
-- **`etl-js/transforms`**: i cinque transformer di base in un pacchetto solo, e
+- **`etljs/transformers`**: i cinque transformer di base in un pacchetto solo, e
   `PluginModule.plugins`, cosi' un modulo puo' esportarne piu' d'uno. `lookup` e' rimasto separato.
 - **`EtlError`** al posto di `IngestError`.
 - **Da monorepo a pacchetto singolo**: i sei workspace di libreria diventano sei cartelle di `src/`
-  in un pacchetto `etl-js` con un entry point per cartella, e la CLI entra come `bin`. I confini
+  in un pacchetto `etljs` con un entry point per cartella, e la CLI entra come `bin`. I confini
   restano imposti da dependency-cruiser, su cartelle invece che su workspace.
 - **`createEngine().use(...)`**: i plugin si collegano esplicitamente. Il caricamento dinamico per
   nome e' stato ritirato dalla superficie pubblica, rimandato alla GUI/multi-tenant.

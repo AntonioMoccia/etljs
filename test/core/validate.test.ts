@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import type { Definition } from "etl-js/contracts";
-import { Registry, describePlugin, listPlugins, validate } from "etl-js";
-import type { ValidationIssue } from "etl-js";
+import type { Definition } from "etljs/contracts";
+import { Registry, describePlugin, listPlugins, validate } from "etljs";
+import type { ValidationIssue } from "etljs";
 import { definition, pickyTransformer, readerOf, writerOf } from "./fakes.js";
 
 function fullRegistry(): Registry {

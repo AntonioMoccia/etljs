@@ -30,8 +30,8 @@ describe.skipIf(!built)("il pacchetto compilato", () => {
     const stdout = await runScript(`
       import { readFile } from "node:fs/promises";
       import { createEngine, createFileInput } from "${url("dist/core/index.js")}";
-      import { csvReader } from "${url("dist/csv/index.js")}";
-      import { postgresWriter } from "${url("dist/postgres/index.js")}";
+      import { csvReader } from "${url("dist/csv-reader/index.js")}";
+      import { postgresWriter } from "${url("dist/postgres-writer/index.js")}";
 
       const definition = JSON.parse(await readFile("examples/acme-fase0.json", "utf8"));
       const silent = { debug(){}, info(){}, warn(){}, error(){}, child(){ return silent; } };
@@ -61,10 +61,10 @@ describe.skipIf(!built)("il pacchetto compilato", () => {
       const moduli = {
         ".":          "${url("dist/core/index.js")}",
         "contracts":  "${url("dist/contracts/index.js")}",
-        "csv":        "${url("dist/csv/index.js")}",
-        "postgres":   "${url("dist/postgres/index.js")}",
-        "transforms": "${url("dist/transforms/index.js")}",
-        "lookup":     "${url("dist/lookup/index.js")}",
+        "csv":        "${url("dist/csv-reader/index.js")}",
+        "postgres":   "${url("dist/postgres-writer/index.js")}",
+        "transforms": "${url("dist/transformers/index.js")}",
+        "lookup":     "${url("dist/lookup-transformer/index.js")}",
       };
       const esito = {};
       for (const [nome, specifier] of Object.entries(moduli)) {

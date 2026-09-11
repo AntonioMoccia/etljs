@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { batchOf, mockCtx, testTransformer } from "@etl-js/testing";
-import { validateTransformer as plugin } from "etl-js/transforms";
+import { batchOf, mockCtx, testTransformer } from "@etljs/testing";
+import { validateTransformer as plugin } from "etljs/transformers";
 
 async function check(config: unknown, rows: Record<string, unknown>[], ctx = mockCtx()) {
   return testTransformer(plugin, { rows, config, ctx });
