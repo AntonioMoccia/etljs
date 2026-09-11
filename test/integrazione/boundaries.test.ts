@@ -2,10 +2,13 @@ import { execFile } from "node:child_process";
 import { rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, test } from "vitest";
 
 const exec = promisify(execFile);
-const repoRoot = new URL("../..", import.meta.url).pathname;
+// fileURLToPath e non .pathname: su Windows quello lascia lo slash
+// iniziale ("/C:/...") e join() finisce per produrre "C:\C:\...".
+const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 /**
  * File-sonda: viene creato dentro una cartella di `src/`, gli si fa importare
@@ -14,6 +17,13 @@ const repoRoot = new URL("../..", import.meta.url).pathname;
  * configurazione cambia. Col pacchetto unico i confini sono fra cartelle
  * invece che fra workspace, ma le regole sono le stesse.
  */
+/**
+ * Si invoca il binario con `node`, non con `npx`: su Windows gli eseguibili di
+ * node_modules sono `.cmd` e `execFile` non li trova senza shell.
+ */
+const depcruise = join(repoRoot, "node_modules/dependency-cruiser/bin/dependency-cruise.mjs");
+const argomenti = ["src", "packages", "--config", ".dependency-cruiser.cjs"];
+
 const probes: string[] = [];
 
 async function plantProbe(dir: string, source: string): Promise<void> {
@@ -24,9 +34,7 @@ async function plantProbe(dir: string, source: string): Promise<void> {
 
 async function cruise(): Promise<{ code: number; output: string }> {
   try {
-    const { stdout } = await exec("npx", ["depcruise", "src", "packages", "--config", ".dependency-cruiser.cjs"], {
-      cwd: repoRoot,
-    });
+    const { stdout } = await exec(process.execPath, [depcruise, ...argomenti], { cwd: repoRoot });
     return { code: 0, output: stdout };
   } catch (error) {
     const failure = error as { code?: number; stdout?: string; stderr?: string };

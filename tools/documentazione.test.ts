@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 import type { Manifest } from "etl-js/contracts";
 import { csvReader } from "etl-js/csv-reader";
@@ -18,7 +19,9 @@ import { transformers } from "etl-js/transformers";
  * si' . Si lanciano a comando con `npm run check:docs`, e tornano bloccanti
  * il giorno che arrivano contributor esterni o la GUI.
  */
-const repoRoot = new URL("..", import.meta.url).pathname;
+// fileURLToPath e non .pathname: su Windows quello lascia lo slash
+// iniziale ("/C:/...") e join() finisce per produrre "C:\C:\...".
+const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 
 const DOCUMENTI = [
   "README.md",

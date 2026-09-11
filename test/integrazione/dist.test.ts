@@ -1,12 +1,14 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { describe, expect, test } from "vitest";
 
 const exec = promisify(execFile);
-const repoRoot = new URL("../..", import.meta.url).pathname;
+// fileURLToPath e non .pathname: su Windows quello lascia lo slash
+// iniziale ("/C:/...") e join() finisce per produrre "C:\C:\...".
+const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 /**
  * Prova sul **compilato**, in un processo Node separato: i subpath di

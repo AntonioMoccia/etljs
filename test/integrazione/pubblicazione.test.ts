@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 
 /**
@@ -7,7 +8,9 @@ import { describe, expect, test } from "vitest";
  * devono restare veri anche fra sei mesi, quando nessuno si ricordera' perche'
  * erano fatti cosi'.
  */
-const repoRoot = new URL("../..", import.meta.url).pathname;
+// fileURLToPath e non .pathname: su Windows quello lascia lo slash
+// iniziale ("/C:/...") e join() finisce per produrre "C:\C:\...".
+const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 async function manifest(): Promise<Record<string, never> & {
   name: string; version: string; files: string[]; bin: Record<string, string>;
