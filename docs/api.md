@@ -5,10 +5,43 @@ qui non combacia col codice, e' un bug della documentazione.
 
 ```ts
 import {
-  run, validate, describePlugin, listPlugins, preview,
-  Registry, createLoader, createFileInput, createPostgresProvider, withRetry,
-} from "@etl-js/core";
+  createEngine, run, validate, describePlugin, listPlugins, preview,
+  Registry, createFileInput, createPostgresProvider, withRetry,
+} from "etl-js";
+import csv from "etl-js/csv";
+import postgres from "etl-js/postgres";
+import { plugins as transforms } from "etl-js/transforms";
+import lookup from "etl-js/lookup";
 ```
+
+## `createEngine()`
+
+Il modo normale di usare la libreria: si collegano i plugin e si esegue.
+
+```ts
+const engine = createEngine()
+  .use(csv)
+  .use(postgres)
+  .useAll(transforms);
+
+const result = await engine.run(definition, ctx);
+```
+
+| Metodo | Cosa fa |
+|---|---|
+| `use(plugin)` | collega un plugin; restituisce l'engine, cosi' le chiamate si concatenano |
+| `useAll(plugins)` | collega un elenco, comodo coi pacchetti che ne contengono piu' d'uno |
+| `run(definition, ctx, options?)` | esegue con i plugin collegati |
+| `registry` | il registry sottostante, per `describePlugin` e `listPlugins` |
+
+E' una facciata sottile sopra `Registry` e `run()`: non aggiunge comportamento. Collegare due plugin
+con lo stesso nome lancia, come fa `Registry.register`.
+
+**Ogni engine ha la sua Registry.** Due engine nello stesso processo non si scambiano i plugin, il
+che conta per un host che ne costruisce uno per tenant.
+
+Le opzioni di `engine.run()` sono quelle di `run()` **meno** `registry`: il registry lo possiede
+l'engine.
 
 ## `run(definition, ctx, options?)`
 
@@ -43,8 +76,7 @@ cui quel metodo **non esiste**.
 
 | Opzione | Default | Effetto |
 |---|---|---|
-| `registry` | `defaultRegistry` | Dove cercare i plugin |
-| `resolve` | — | Come caricare i nomi assenti dal registry (vedi `createLoader`) |
+| `registry` | `defaultRegistry` | Dove cercare i plugin (con `createEngine` lo fornisce l'engine) |
 | `events` | — | Callback di osservazione |
 | `runId` | generato | Identificativo del run |
 | `dryRun` | `false` | Esegue tutto tranne la scrittura: la destinazione non viene aperta |
@@ -53,7 +85,7 @@ cui quel metodo **non esiste**.
 
 ### Cosa fa, nell'ordine
 
-1. Risolve i plugin (registry, poi `resolve`).
+1. Risolve i plugin chiedendoli al registry.
 2. Valida la Definition — **prima** di leggere una riga o aprire una transazione.
 3. Apre la destinazione, se non e' dry-run.
 4. Per ogni lotto: legge, trasforma, controlla la soglia di scarto, scrive, emette `onBatch`.
@@ -145,41 +177,28 @@ registry.clear();
 ```
 
 `register` verifica il protocollo e rifiuta due plugin diversi con lo stesso nome. Il registry
-indicizza per **`manifest.name`**, non per nome del pacchetto: un pacchetto puo' contenerne molti.
+indicizza per **`manifest.name`**, non per nome del pacchetto o del modulo: un modulo puo' esportarne
+molti (`etl-js/transforms` ne porta cinque).
 
-`defaultRegistry` e' l'istanza di processo, usata quando non ne passi una.
+`defaultRegistry` e' l'istanza di processo, usata quando non ne passi una. Nella maggior parte dei
+casi non serve toccare `Registry` direttamente: `createEngine()` ne costruisce una e la gestisce.
 
-## `createLoader(options?)`
+## Caricare i plugin a runtime
 
-Restituisce un risolutore da passare a `run({ resolve })`: carica i plugin da npm **per nome**, senza
-che il core li conosca.
+Non c'e', nel v1: i plugin si collegano con `use()`, esplicitamente.
+
+La risoluzione per nome da npm (`loadPlugin`, `createLoader`, i prefissi `@etl-js/plugin-`) esisteva
+quando il progetto era un monorepo di pacchetti separati. Con un pacchetto unico non ci sono
+pacchetti da risolvere, e la complessita' non la usava nessuno. Torna quando si progetta la GUI o il
+multi-tenant, dove serve davvero caricare cio' che l'utente ha installato; il codice di partenza sta
+nella storia git.
+
+Nel frattempo, un plugin di terzi si usa cosi':
 
 ```ts
-const registry = new Registry();
-await run(definition, ctx, { registry, resolve: createLoader({ registry }) });
+import maiuscolo from "@acme/etl-plugin-maiuscolo";
+const engine = createEngine().use(csv).use(maiuscolo).use(postgres);
 ```
-
-| Opzione | Default | Effetto |
-|---|---|---|
-| `prefixes` | `["@etl-js/plugin-", "etl-js-plugin-"]` | Convenzione nome logico → pacchetto |
-| `packages` | — | Mappa esplicita `nome → specifier`; ha la precedenza |
-| `registry` | `defaultRegistry` | Cache di processo |
-| `importModule` | `await import(...)` | Iniettabile nei test |
-
-Il loader:
-
-- prova gli specifier in ordine e si ferma al primo che risolve;
-- verifica il **protocollo** al caricamento, non a meta' run;
-- registra tutti i plugin del pacchetto, non solo quello chiesto, cosi' il successivo non fa un
-  secondo import;
-- distingue "pacchetto non trovato" da "il pacchetto e' esploso al caricamento", e non maschera il
-  secondo come il primo.
-
-Un pacchetto dichiara i propri plugin con `export const plugin: Plugin` (uno) o
-`export const plugins: Plugin[]` (molti). Un fratello con protocollo incompatibile fa fallire tutto
-il pacchetto: un bundle si prende intero.
-
-Aggiornare o disinstallare un plugin richiede il riavvio del processo, come in Node-RED o n8n.
 
 ## `createFileInput(options?)`
 
@@ -261,7 +280,7 @@ dei dati, il posto e' il writer.
 
 ## Tipi
 
-Dal pacchetto `@etl-js/contracts`:
+Dal pacchetto `etl-js/contracts`:
 
 | Tipo | Cos'e' |
 |---|---|

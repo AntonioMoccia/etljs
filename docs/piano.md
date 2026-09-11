@@ -44,7 +44,7 @@ transformer non l'ha toccato.
 Non c'e' Postgres ne' Docker su questa macchina. Il percorso verso un database vero e' coperto da due
 suite che si saltano da sole senza `PG_TEST_URL`:
 
-- `packages/core/test/postgres.integration.test.ts` - `COPY`, transazioni, sola lettura imposta dal
+- `test/core/postgres.integration.test.ts` - `COPY`, transazioni, sola lettura imposta dal
   server, identificatori ostili.
 - `test/postgres-e2e.test.ts` - `replace-by` che non duplica, rollback totale, `upsert`.
 
@@ -62,9 +62,14 @@ Tre cambi arrivati dopo il piano, tutti su richiesta e tutti con la suite verde 
 
 - **`ctx.openInput`**: il reader non apre piu' file da se'. `plugin-csv` e' passato a `csv-parse` e
   `config.path` e' diventato `config.input`.
-- **`@etl-js/plugin-transforms`**: i cinque transformer di base in un pacchetto solo, e
+- **`etl-js/transforms`**: i cinque transformer di base in un pacchetto solo, e
   `PluginModule.plugins` perche' il loader sappia gestirlo. `lookup` e' rimasto separato.
-- **`IngestError` e' diventato `EtlError`.**
+- **`EtlError`** al posto di `IngestError`.
+- **Da monorepo a pacchetto singolo**: i sei workspace di libreria diventano sei cartelle di `src/`
+  in un pacchetto `etl-js` con un entry point per cartella, e la CLI entra come `bin`. I confini
+  restano imposti da dependency-cruiser, su cartelle invece che su workspace.
+- **`createEngine().use(...)`**: i plugin si collegano esplicitamente. Il caricamento dinamico per
+  nome e' stato ritirato dalla superficie pubblica, rimandato alla GUI/multi-tenant.
 
 ## Debiti dichiarati
 

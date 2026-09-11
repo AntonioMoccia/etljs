@@ -29,49 +29,48 @@ I2 e I9 sono imposti da **dependency-cruiser** (`npm run check:boundaries`), non
 - Prima di dichiarare una fase completa: `npm run build && npm run typecheck:tests && npm test && npm run check:boundaries`
   devono passare (scorciatoia: `npm run check`).
 - I test si scrivono **insieme** al codice, non dopo.
-- **Se per aggiungere un transformer serve modificare `packages/core/src/pipeline.ts`, fermarsi e segnalarlo:
+- **Se per aggiungere un transformer serve modificare `src/core/pipeline.ts`, fermarsi e segnalarlo:
   l'astrazione e' sbagliata.** `pipeline.ts` cambia solo quando cambia il motore, mai quando cambia un plugin.
   Finora e' cambiato tre volte, e mai per un plugin: per il motore stesso, per validare prima di partire,
   per la soglia di scarto e la classificazione degli errori. Sei transformer non l'hanno toccato.
 - Nessuna dipendenza nuova senza giustificazione scritta (vedi "Dipendenze" qui sotto). Si preferisce la
   libreria standard di Node.
 - **Commenti in italiano, identificatori in inglese.** TypeScript `strict: true`, niente `any` implicito.
+- I controlli sulla documentazione (`npm run check:docs`) **non** fanno parte di `npm test`: tornano
+  bloccanti quando arrivano contributor esterni o la GUI.
 
 ## Struttura
 
+Un solo pacchetto npm, `etl-js`, con un entry point per cartella:
+
 ```
+src/
+  contracts/    etl-js/contracts    tipi + costanti/utility pure, ZERO dipendenze
+  core/         etl-js              registry, engine, pipeline, validate, describe, preview
+  csv/          etl-js/csv          reader
+  postgres/     etl-js/postgres     writer: append, upsert, replace-by
+  transforms/   etl-js/transforms   libreria standard: cast, filter, default, rename, validate
+  lookup/       etl-js/lookup       transformer (cardine): collega a dati gia' presenti, in batch
+  cli/          il comando `etl-js` (campo "bin"); e' l'unico posto che nomina i plugin
 packages/
-  contracts/        @etl-js/contracts   tipi + costanti/utility pure, ZERO dipendenze
-  core/             @etl-js/core        registry, loader, pipeline, validate, describe, preview
-  testing/          @etl-js/testing     harness per testare i plugin
-  cli/              @etl-js/cli         usa core; nomina solo csv e postgres, il resto lo carica
-  plugin-csv/         reader
-  plugin-postgres/    writer: append, upsert, replace-by
-  plugin-transforms/  libreria standard: cast, filter, default, rename, validate
-  plugin-lookup/      transformer (cardine): collega al database, in batch
+  testing/      harness di prova. Non pubblicato, non esportato come subpath
+test/           speculare a src/, piu' test/integrazione/
+tools/          controlli non bloccanti (documentazione)
 ```
 
-**Un pacchetto npm non e' un plugin.** E' un'unita' di distribuzione; il plugin e' un'unita' di
-configurazione. Un pacchetto ne dichiara uno con `export const plugin` o molti con
-`export const plugins: Plugin[]`, e il registry li indicizza per `manifest.name`. I cinque
-transformer di base stanno insieme perche' si installano insieme; ognuno tiene la **propria**
-`manifest.version`, cosi' modificarne uno non fa comparire `VERSION_DRIFT` sugli altri.
+**I confini non si sono allentati diventando cartelle.** Le regole di
+dependency-cruiser sono le stesse di quando erano workspace separati, applicate a
+`src/<cartella>` invece che a `packages/<pacchetto>`, e le sonde in
+`test/integrazione/boundaries.test.ts` piantano un import proibito per verificare
+che scattino davvero.
 
-Il prezzo di tenerli separati lo si e' visto: `configOf` era riscritto cinque volte e "campo vuoto"
-tre volte con due nomi diversi, gia' divergenti fra loro. Cio' che serve a piu' pacchetti sta in
-`contracts` (`isBlank`, `createRunCache`, `configInvalid`), perche' un plugin non puo' importarne
-un altro (I9).
-
-I transformer **non** sono dipendenze della CLI: vengono caricati per nome dal loader quando una
-Definition li cita. Se un giorno smettessero di funzionare cosi', il test
-`cli > l'esempio completo e' valido con i plugin caricati da npm` diventerebbe rosso.
-
-Grafo consentito: `contracts` <- `core`, `plugin-*`, `cli`, `testing`. I plugin dipendono **solo** da
-`contracts`. Nessun plugin importa `core` o un altro plugin.
+**Un entry point non e' un plugin.** `exports` dice cosa un consumer puo'
+importare; `use()` dice cosa partecipa a un'importazione. Il core continua a non
+conoscere alcun plugin per nome (I2).
 
 ## Contratti
 
-Le firme canoniche stanno in `packages/contracts/src/`. Non inventarne altre. Cinque estensioni deliberate
+Le firme canoniche stanno in `src/contracts/`. Non inventarne altre. Cinque estensioni deliberate
 rispetto alla specifica iniziale, documentate qui perche' non siano riscoperte come "deviazioni":
 
 1. **`WriterCtx extends Ctx`** aggiunge `dbWrite(name): Promise<WriteTransaction>`. `Ctx.db()` resta in
@@ -125,6 +124,12 @@ importa `node:fs`**: i byte glieli da' il core tramite `ctx.openInput` (I6).
 - Il BOM: `TextDecoder` lo toglie da solo, quindi il reader lo decodifica con `ignoreBOM: true` e
   decide lui. Cosi' `bom: false` funziona davvero, e si intercetta anche il caso vero, un file
   salvato UTF-8-BOM ma dichiarato latin1.
+- **Niente caricamento dinamico dei plugin nel v1.** I plugin si collegano con
+  `createEngine().use(...)`, esplicitamente. La risoluzione per nome da npm
+  (`loadPlugin`, `createLoader`, i prefissi `@etl-js/plugin-`) e' stata rimossa: con un
+  pacchetto unico non ci sono pacchetti da risolvere, e nessuno la usava. Torna quando si
+  progetta la GUI o il multi-tenant, dove serve davvero caricare cio' che l'utente installa;
+  il codice di partenza sta nella storia git, commit "Fase 3".
 - Le scritture dentro una transazione **non** si ritentano mai: un'istruzione fallita ha gia' abortito
   la transazione. Si ritentano solo letture e connessioni, e solo se l'errore si dichiara `retryable`.
 
@@ -139,9 +144,10 @@ senza documentarla e' un test rosso.
 ## Comandi
 
 ```
-npm run build             # tsc --build su tutti i workspace
+npm run build             # tsc su src/ -> dist/
 npm run typecheck:tests   # type-check dei test (vitest non type-checka)
 npm test                  # vitest run
 npm run check:boundaries  # dependency-cruiser: I2 + I9
 npm run check             # tutti e quattro
+npm run check:docs        # documentazione: a comando, non bloccante
 ```

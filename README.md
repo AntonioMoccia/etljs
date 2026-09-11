@@ -9,22 +9,40 @@ file CSV di formati diversi in una tabella unica, collegandoli a dati gia' prese
 ## Provalo
 
 ```bash
-npm install
-npm run build
+npm install etl-js
+```
 
-node packages/cli/dist/bin.js plugins                        # cosa c'e' installato
-node packages/cli/dist/bin.js describe csv                   # JSON Schema della config
-node packages/cli/dist/bin.js validate examples/acme.json    # cosa non va, tutto insieme
-node packages/cli/dist/bin.js preview examples/acme-fase0.json -n 5
-node packages/cli/dist/bin.js run examples/acme-fase0.json --dry-run
+```ts
+import { createEngine } from "etl-js";
+import csv from "etl-js/csv";
+import postgres from "etl-js/postgres";
+import { plugins as transforms } from "etl-js/transforms";
+
+const engine = createEngine().use(csv).use(postgres).useAll(transforms);
+const result = await engine.run(definition, ctx);
+```
+
+Installare il pacchetto porta con se' anche il comando:
+
+```bash
+npx etl-js plugins                        # cosa e' collegato
+npx etl-js describe csv                   # JSON Schema della config
+npx etl-js validate clienti/acme.json     # cosa non va, tutto insieme
+npx etl-js preview clienti/acme.json -n 5
+npx etl-js run clienti/acme.json --dry-run
+```
+
+Dal repository, invece che dal pacchetto installato:
+
+```bash
+npm install && npm run build
+node dist/cli/bin.js run examples/acme-fase0.json --dry-run
 ```
 
 Per scrivere davvero su Postgres, e tenere le righe rifiutate:
 
 ```bash
-node packages/cli/dist/bin.js run examples/acme.json \
-  --db principale=env:DATABASE_URL \
-  --rejects scarti.csv
+npx etl-js run clienti/acme.json --db principale=env:DATABASE_URL --rejects scarti.csv
 ```
 
 ## Come funziona
@@ -38,26 +56,28 @@ Definition (JSON)
 ```
 
 Il `core` non conosce nessun plugin: li riceve in una `Registry` o li carica per nome da npm. Il
-grafo delle dipendenze punta tutto verso `@etl-js/contracts`, e dependency-cruiser lo verifica a ogni
+grafo delle dipendenze punta tutto verso `etl-js/contracts`, e dependency-cruiser lo verifica a ogni
 `npm run check`.
 
 **Un pacchetto e' un'unita' di distribuzione, un plugin un'unita' di configurazione: non coincidono.**
-`@etl-js/plugin-transforms` porta cinque plugin (`cast`, `filter`, `default`, `rename`, `validate`)
+`etl-js/transforms` porta cinque plugin (`cast`, `filter`, `default`, `rename`, `validate`)
 perche' si installano sempre insieme; nelle Definition restano cinque nomi distinti e ognuno tiene la
 propria versione. Un pacchetto dichiara i suoi con `export const plugins: Plugin[]`.
 
-## I pacchetti
+## Gli entry point
 
-| Pacchetto | Cosa fa |
-|-----------|---------|
-| `@etl-js/contracts` | tipi, `PROTOCOL_VERSION`, `EtlError`, utility SQL. **Zero dipendenze** |
-| `@etl-js/core` | `run`, `validate`, `describe`, `listPlugins`, `preview`, loader, eventi, driver Postgres |
-| `@etl-js/testing` | `testTransformer`, `mockCtx`, `recordingDb`: provare un plugin senza servizi esterni |
-| `@etl-js/cli` | `run`, `plugins`, `describe`, `validate`, `preview` |
-| `@etl-js/plugin-csv` | reader CSV in streaming su `csv-parse`; non apre file da se' (`ctx.openInput`) |
-| `@etl-js/plugin-postgres` | writer con `append`, `upsert`, `replace-by` |
-| `@etl-js/plugin-transforms` | la libreria standard: `cast`, `filter`, `default`, `rename`, `validate` |
-| `@etl-js/plugin-lookup` | collega le righe a dati gia' sul database, in batch |
+Un solo pacchetto, `etl-js`, con un import per area:
+
+| Import | Cosa contiene |
+|---|---|
+| `etl-js` | `createEngine`, `run`, `validate`, `describe`, `preview`, `Registry`, eventi, driver Postgres |
+| `etl-js/contracts` | tipi, `PROTOCOL_VERSION`, `EtlError`, utility SQL. **Zero dipendenze** |
+| `etl-js/csv` | reader CSV in streaming |
+| `etl-js/postgres` | writer con `append`, `upsert`, `replace-by` |
+| `etl-js/transforms` | la libreria standard: `cast`, `filter`, `default`, `rename`, `validate` |
+| `etl-js/lookup` | collega le righe a dati gia' sul database, in batch |
+
+Il comando `etl-js` arriva con il pacchetto.
 
 ## Un flusso, un file
 
@@ -97,15 +117,18 @@ in piu' e' un secondo file JSON, non un secondo pacchetto.
 ## Usarla da un altro programma
 
 ```ts
-import { Registry, createLoader, run } from "@etl-js/core";
-import { createPostgresProvider } from "@etl-js/core";
+import { createEngine, createFileInput, createPostgresProvider } from "etl-js";
+import csv from "etl-js/csv";
+import postgres from "etl-js/postgres";
+import { plugins as transforms } from "etl-js/transforms";
 
 const provider = await createPostgresProvider({
   principale: { connectionString: process.env.DATABASE_URL! },
 });
 
-const registry = new Registry();
-const result = await run(definition, {
+const engine = createEngine().use(csv).use(postgres).useAll(transforms);
+
+const result = await engine.run(definition, {
   // In produzione questa risolve su object storage, e i plugin non cambiano.
   openInput: (ref) => apriDaS3(ref),
   db: (name) => provider.db(name),
@@ -114,8 +137,6 @@ const result = await run(definition, {
   log: mioLogger,
   signal: controller.signal,
 }, {
-  registry,
-  resolve: createLoader({ registry }),   // carica i plugin per nome da npm
   events: {
     onBatch: (e) => aggiornaBarra(e.read, e.written),
     onRecordFailed: (e) => salvaScarto(e.failed),
@@ -147,11 +168,12 @@ che usa questa libreria.
 ## Comandi
 
 ```bash
-npm run build             # tsc --build su tutti i workspace
+npm run build             # tsc su src/ -> dist/
 npm run typecheck:tests   # i test non sono type-checkati da vitest
 npm test                  # vitest run
 npm run check:boundaries  # dependency-cruiser: I2 + I9
 npm run check             # tutti e quattro
+npm run check:docs        # documentazione: a comando, non bloccante
 
 PG_TEST_URL=postgres://... npm test    # include anche i test d'integrazione
 ```

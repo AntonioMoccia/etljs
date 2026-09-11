@@ -5,14 +5,19 @@ Dal repository appena clonato al primo import, con e senza database.
 ## Installare
 
 ```bash
-npm install
-npm run build
+npm install etl-js
+```
+
+Il pacchetto porta con se' anche il comando `etl-js`. Dal repository, invece:
+
+```bash
+npm install && npm run build
 ```
 
 Node 18.18 o superiore. `pg` e `pg-copy-streams` sono dipendenze **opzionali** del core: senza
 Postgres tutto il resto funziona, e la CLI se ne accorge solo quando provi a scrivere davvero.
 
-Comodita': `alias etl='node packages/cli/dist/bin.js'` — nel resto della pagina si usa quello.
+Nel resto della pagina `etl` sta per `npx etl-js` (o `node dist/cli/bin.js`, dal repository).
 
 ## Guardarsi intorno
 
@@ -183,14 +188,19 @@ etl run flussi/acme.json --input /var/spool/acme/2026-02-10.csv
 ## Da un altro programma
 
 ```ts
-import { Registry, createFileInput, createLoader, createPostgresProvider, run } from "@etl-js/core";
+import { createEngine, createFileInput, createPostgresProvider } from "etl-js";
+import csv from "etl-js/csv";
+import postgres from "etl-js/postgres";
+import lookup from "etl-js/lookup";
+import { plugins as transforms } from "etl-js/transforms";
 
 const provider = await createPostgresProvider({
   principale: { connectionString: process.env.DATABASE_URL! },
 });
-const registry = new Registry();
 
-const result = await run(definition, {
+const engine = createEngine().use(csv).use(postgres).use(lookup).useAll(transforms);
+
+const result = await engine.run(definition, {
   openInput: createFileInput({ baseDir: "/var/spool" }),
   db:        (name) => provider.db(name),
   dbWrite:   (name) => provider.dbWrite(name),
@@ -198,8 +208,6 @@ const result = await run(definition, {
   log:       mioLogger,
   signal:    controller.signal,
 }, {
-  registry,
-  resolve: createLoader({ registry }),
   events: {
     onBatch:        (e) => barra.aggiorna(e.read, e.written),
     onRecordFailed: (e) => scarti.salva(e.failed),
@@ -214,11 +222,12 @@ file della macchina. Vedi [api.md](api.md#createfileinput).
 ## Comandi
 
 ```bash
-npm run build             # tsc --build su tutti i workspace
+npm run build             # tsc su src/ -> dist/
 npm run typecheck:tests   # vitest non type-checka: questo si'
 npm test                  # vitest run
 npm run check:boundaries  # dependency-cruiser
 npm run check             # tutti e quattro
+npm run check:docs        # documentazione: a comando, non bloccante
 
 PG_TEST_URL=postgres://... npm test   # include i test d'integrazione, altrimenti saltati
 ```

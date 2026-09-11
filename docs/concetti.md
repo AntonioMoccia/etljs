@@ -39,8 +39,9 @@ si diffa, si valida, e un giorno una GUI potra' generarla.
 **Non nomina il flusso da nessuna parte se non in `client`.** Non c'e' `"tipo": "csv-acme"`. Se ti
 trovi a scrivere il nome di un flusso dentro un plugin, manca un parametro alla config.
 
-**I `type` sono nomi logici, non pacchetti npm.** Il motore non sa cosa sia `"cast"`: chiede al
-registry, o lo carica da npm per convenzione. Non c'e' un solo `if` sul tipo, in tutto il core.
+**I `type` sono nomi logici, non pacchetti npm.** Il motore non sa cosa sia `"cast"`: lo cerca fra i
+plugin che gli hai collegato con `createEngine().use(...)`. Non c'e' un solo `if` sul tipo, in tutto
+il core.
 
 Riferimento completo: [definition.md](definition.md).
 

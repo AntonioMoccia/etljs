@@ -34,9 +34,10 @@ Ogni stadio ha la stessa forma:
 { "type": "<nome logico del plugin>", "config": { ... } }
 ```
 
-`type` non e' un nome di pacchetto npm: e' il nome che il plugin dichiara nel proprio manifest. Il
-motore lo cerca nel registry; se non c'e', lo carica da npm per convenzione
-(`@etl-js/plugin-<nome>` o `etl-js-plugin-<nome>`). Vedi [api.md](api.md#createloader).
+`type` e' il nome che il plugin dichiara nel proprio manifest, non un percorso e non un pacchetto
+npm. Il motore lo cerca fra i plugin che gli sono stati **collegati** con
+`createEngine().use(...)`: se non c'e', fallisce con `PLUGIN_NOT_FOUND` prima di leggere una riga.
+Vedi [api.md](api.md#createengine).
 
 `config` viene passata al plugin cosi' com'e' ed e' **il plugin** a validarla contro il proprio
 schema. Il core non sa cosa ci sia dentro; sa solo controllarla contro il JSON Schema che il plugin
@@ -183,7 +184,7 @@ etl validate flussi/acme.json
 ```
 
 ```ts
-import { validate } from "@etl-js/core";
+import { validate } from "etl-js";
 const { valid, issues } = validate(definition, { registry });
 ```
 

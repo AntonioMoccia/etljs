@@ -42,21 +42,23 @@ fasi](piano.md).
    RunResult { read, written, failed, aborted, durationMs }
 ```
 
-## I pacchetti
+## Gli entry point
 
-| Pacchetto | Contiene | Dipende da |
+Un solo pacchetto npm, `etl-js`, con un import per area. Le dipendenze puntano tutte verso i
+contratti, e non e' una convenzione: `npm run check:boundaries` lo verifica, e sei test piantano un
+import proibito per assicurarsi che il controllo funzioni davvero.
+
+| Import | Contiene | Dipende da |
 |---|---|---|
-| `@etl-js/contracts` | tipi, `PROTOCOL_VERSION`, `EtlError`, utility SQL | **niente** |
-| `@etl-js/core` | `run`, `validate`, `describe`, `preview`, loader, eventi, driver Postgres | contracts, ajv, pg |
-| `@etl-js/testing` | `testTransformer`, `mockCtx`, `recordingDb` | contracts |
-| `@etl-js/cli` | riga di comando | core + libreria standard |
-| `@etl-js/plugin-csv` | reader CSV | contracts, csv-parse |
-| `@etl-js/plugin-transforms` | `cast`, `filter`, `default`, `rename`, `validate` | contracts, zod |
-| `@etl-js/plugin-lookup` | `lookup` | contracts, zod |
-| `@etl-js/plugin-postgres` | writer Postgres | contracts, zod |
+| `etl-js/contracts` | tipi, `PROTOCOL_VERSION`, `EtlError`, utility SQL | **niente** |
+| `etl-js` | `createEngine`, `run`, `validate`, `describe`, `preview`, eventi, driver Postgres | contracts, ajv, pg |
+| `etl-js/csv` | reader CSV | contracts, csv-parse |
+| `etl-js/transforms` | `cast`, `filter`, `default`, `rename`, `validate` | contracts, zod |
+| `etl-js/lookup` | `lookup` | contracts, zod |
+| `etl-js/postgres` | writer Postgres | contracts, zod |
 
-Il grafo punta tutto verso `contracts`, e non e' una convenzione: `npm run check:boundaries` lo
-verifica, e sei test piantano un import proibito per assicurarsi che il controllo funzioni davvero.
+Il comando `etl-js` arriva col pacchetto. L'harness di prova (`packages/testing`) non e' pubblicato:
+si aggiunge quando qualcuno lo chiede davvero.
 
 ## Le nove regole che spiegano tutto il resto
 

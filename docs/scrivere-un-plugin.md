@@ -18,13 +18,13 @@ conversioni, filtri, rinomine, controlli e lookup, e sono parametrizzati. Se ti 
 ## Uno scheletro completo
 
 ```ts
-// packages/plugin-maiuscolo/src/index.ts
+// @acme/etl-plugin-maiuscolo/src/index.ts
 import {
   PROTOCOL_VERSION,
   configInvalid,
   type TransformerPlugin,
   type Transformer,
-} from "@etl-js/contracts";
+} from "etl-js/contracts";
 import { z } from "zod";
 
 // 1. La config e' un DATO: si descrive con uno schema, non con del codice (I1).
@@ -75,11 +75,11 @@ export default plugin;
 
 ```json
 {
-  "name": "@etl-js/plugin-maiuscolo",
+  "name": "@acme/etl-plugin-maiuscolo",
   "type": "module",
   "main": "./dist/index.js",
   "keywords": ["etl-js-plugin", "transformer"],
-  "peerDependencies": { "@etl-js/contracts": "^0.1.0" },
+  "peerDependencies": { "etl-js": "^0.1.0" },
   "dependencies": { "zod": "^4.0.0" }
 }
 ```
@@ -92,13 +92,13 @@ Se ne pubblichi diversi che si installano sempre insieme, un pacchetto solo bast
 export const plugins: Plugin[] = [castPlugin, filterPlugin, renamePlugin];
 ```
 
-Il loader li registra tutti al primo import, e nelle Definition restano nomi distinti. Dai a ognuno
-la **sua** `manifest.version`, indipendente da quella del pacchetto: altrimenti modificarne uno fa
+Si collegano in un colpo con `useAll()`, e nelle Definition restano nomi distinti. Dai a ognuno la
+**sua** `manifest.version`, indipendente da quella del pacchetto: altrimenti modificarne uno fa
 comparire avvisi `VERSION_DRIFT` su tutti gli altri.
 
-Il nome del pacchetto segue la convenzione `@etl-js/plugin-<nome>` oppure `etl-js-plugin-<nome>`:
-e' cosi' che il loader lo trova a partire dal nome logico scritto nella Definition. Chi usa un altro
-nome lo dichiara con `createLoader({ packages: { maiuscolo: "@acme/qualunque-cosa" } })`.
+Il nome del pacchetto e' libero: nel v1 non c'e' risoluzione per convenzione, perche' non c'e'
+caricamento dinamico. Cio' che conta e' `manifest.name`, perche' e' quello che le Definition
+scrivono in `type`.
 
 ## Provarlo: `@etl-js/testing`
 
@@ -204,7 +204,9 @@ esattamente cosa aggiungere, invece di un `undefined` silenzioso.
 4. **Un transformer non scrive.** Nemmeno un file di log: si usa `ctx.log` (I4).
 5. **Non nomina nessun flusso.** Se ti serve un `if (flusso === "acme")`, manca un parametro alla
    config (I8).
-6. **Non importa `@etl-js/core` ne' un altro plugin.** `npm run check:boundaries` te lo impedisce (I9).
+6. **Non importa il core ne' un altro plugin.** Dipende solo da `etl-js/contracts`. Dentro questo
+   repository `npm run check:boundaries` te lo impedisce; in un pacchetto tuo e' una disciplina che
+   conviene tenere, perche' e' cio' che rende il plugin sostituibile.
 
 ## Un reader o un writer
 
@@ -253,10 +255,16 @@ convenzione: su quell'oggetto il metodo non esiste.
 ## Pubblicarlo e usarlo
 
 ```bash
-npm i @etl-js/plugin-maiuscolo
+npm i @acme/etl-plugin-maiuscolo
 ```
 
-Poi basta citarlo in una Definition; nessun sorgente di questo progetto va toccato:
+Lo si collega come gli altri, e poi lo si cita nella Definition. Nessun sorgente di `etl-js` va
+toccato:
+
+```ts
+import maiuscolo from "@acme/etl-plugin-maiuscolo";
+const engine = createEngine().use(csv).use(maiuscolo).use(postgres);
+```
 
 ```json
 { "type": "maiuscolo", "config": { "fields": ["codice"] } }

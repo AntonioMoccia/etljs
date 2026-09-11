@@ -5,14 +5,14 @@ quello del manifest: `etl describe <nome>` lo stampa, ed e' quello che il motore
 
 | Nome | Tipo | Pacchetto |
 |---|---|---|
-| [`csv`](#csv) | reader | `@etl-js/plugin-csv` |
-| [`filter`](#filter) | transformer | `@etl-js/plugin-transforms` |
-| [`rename`](#rename) | transformer | `@etl-js/plugin-transforms` |
-| [`cast`](#cast) | transformer | `@etl-js/plugin-transforms` |
-| [`default`](#default) | transformer | `@etl-js/plugin-transforms` |
-| [`validate`](#validate) | transformer | `@etl-js/plugin-transforms` |
-| [`lookup`](#lookup) | transformer | `@etl-js/plugin-lookup` |
-| [`postgres`](#postgres) | writer | `@etl-js/plugin-postgres` |
+| [`csv`](#csv) | reader | `etl-js/csv` |
+| [`filter`](#filter) | transformer | `etl-js/transforms` |
+| [`rename`](#rename) | transformer | `etl-js/transforms` |
+| [`cast`](#cast) | transformer | `etl-js/transforms` |
+| [`default`](#default) | transformer | `etl-js/transforms` |
+| [`validate`](#validate) | transformer | `etl-js/transforms` |
+| [`lookup`](#lookup) | transformer | `etl-js/lookup` |
+| [`postgres`](#postgres) | writer | `etl-js/postgres` |
 
 ---
 
