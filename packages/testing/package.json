@@ -4,16 +4,8 @@
   "type": "module",
   "description": "Harness per testare i plugin senza servizi esterni",
   "license": "MIT",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
+  "engines": {
+    "node": ">=18.18"
   },
-  "files": ["dist"],
-  "engines": { "node": ">=18.18" },
-  "peerDependencies": { "@etl-js/contracts": "^0.1.0" },
-  "devDependencies": { "@etl-js/contracts": "^0.1.0" }
+  "private": true
 }

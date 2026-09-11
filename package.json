@@ -1,25 +1,45 @@
 {
   "name": "etl-js",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "description": "Motore di importazione dati a plugin: libreria senza stato",
-  "engines": {
-    "node": ">=18.18"
+  "license": "MIT",
+  "engines": { "node": ">=18.18" },
+  "main": "./dist/core/index.js",
+  "types": "./dist/core/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/core/index.d.ts", "import": "./dist/core/index.js" },
+    "./contracts": { "types": "./dist/contracts/index.d.ts", "import": "./dist/contracts/index.js" },
+    "./csv": { "types": "./dist/csv/index.d.ts", "import": "./dist/csv/index.js" },
+    "./postgres": { "types": "./dist/postgres/index.d.ts", "import": "./dist/postgres/index.js" },
+    "./transforms": { "types": "./dist/transforms/index.d.ts", "import": "./dist/transforms/index.js" },
+    "./lookup": { "types": "./dist/lookup/index.d.ts", "import": "./dist/lookup/index.js" }
   },
-  "workspaces": [
-    "packages/*"
-  ],
+  "bin": { "etl-js": "./dist/cli/bin.js" },
+  "files": ["dist"],
+  "workspaces": ["packages/*"],
   "scripts": {
-    "build": "tsc --build",
-    "clean": "tsc --build --clean",
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist *.tsbuildinfo",
     "typecheck:tests": "tsc -p tsconfig.tests.json",
     "test": "vitest run",
-    "check:boundaries": "depcruise packages --config .dependency-cruiser.cjs",
+    "check:boundaries": "depcruise src packages --config .dependency-cruiser.cjs",
+    "check:docs": "vitest run test/integrazione/documentazione.test.ts",
     "check": "npm run build && npm run typecheck:tests && npm test && npm run check:boundaries"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "csv-parse": "^7.0.2",
+    "zod": "^4.0.0"
+  },
+  "optionalDependencies": {
+    "pg": "^8.13.1",
+    "pg-copy-streams": "^6.0.6"
   },
   "devDependencies": {
     "@types/node": "^18.19.0",
+    "@types/pg": "^8.11.10",
     "dependency-cruiser": "^16.10.0",
     "typescript": "^5.6.3",
     "vitest": "^3.2.7"

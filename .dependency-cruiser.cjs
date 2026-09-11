@@ -1,25 +1,29 @@
 /**
  * Confini architetturali imposti dallo strumento, non dalla disciplina (I2, I9).
  *
+ * Con il pacchetto unico i confini sono fra **cartelle di src/** invece che fra
+ * workspace npm, ma le regole sono le stesse:
+ *
  *   contracts  <-- core
- *   contracts  <-- plugin-*        (i plugin NON vedono core ne' altri plugin)
+ *   contracts  <-- csv, postgres, transforms, lookup   (mai fra loro, mai core)
  *   contracts  <-- cli --> core --> (niente plugin)
  */
+const PLUGIN_DIRS = "csv|postgres|transforms|lookup";
+
 module.exports = {
   forbidden: [
     {
       name: "contracts-e-una-foglia",
-      comment:
-        "I9: @etl-js/contracts non dipende da nulla, ne' da altri workspace ne' da npm.",
+      comment: "I9: i contratti non dipendono da nessun'altra cartella.",
       severity: "error",
-      from: { path: "^packages/contracts/src/" },
-      to: { path: "^packages/(?!contracts/)" },
+      from: { path: "^src/contracts/" },
+      to: { path: "^src/(?!contracts/)" },
     },
     {
       name: "contracts-senza-dipendenze-npm",
-      comment: "I9: contracts deve restare a zero dipendenze runtime.",
+      comment: "I9: i contratti devono restare a zero dipendenze runtime.",
       severity: "error",
-      from: { path: "^packages/contracts/src/" },
+      from: { path: "^src/contracts/" },
       to: {
         dependencyTypes: [
           "npm",
@@ -35,49 +39,39 @@ module.exports = {
     {
       name: "plugin-dipende-solo-da-contracts",
       comment:
-        "I9: un plugin puo' importare solo se stesso e @etl-js/contracts. Mai core, mai un altro plugin.",
+        "I9: un plugin puo' importare solo se stesso e i contratti. Mai il core, mai un altro plugin.",
       severity: "error",
-      from: { path: "^packages/(plugin-[^/]+)/src/" },
-      to: {
-        path: "^packages/",
-        pathNot: ["^packages/contracts/src/", "^packages/$1/src/"],
-      },
-    },
-    {
-      name: "testing-dipende-solo-da-contracts",
-      comment:
-        "I9: l'harness serve a provare i plugin, quindi non puo' tirarsi dietro il core.",
-      severity: "error",
-      from: { path: "^packages/testing/src/" },
-      to: { path: "^packages/", pathNot: ["^packages/contracts/src/", "^packages/testing/src/"] },
+      from: { path: `^src/(${PLUGIN_DIRS})/` },
+      to: { path: "^src/", pathNot: ["^src/contracts/", "^src/$1/"] },
     },
     {
       name: "core-non-conosce-i-plugin",
-      comment:
-        "I2/I9: il core non nomina mai un plugin concreto e non dipende dalla cli.",
+      comment: "I2/I9: il core non nomina mai un plugin concreto e non dipende dalla cli.",
       severity: "error",
-      from: { path: "^packages/core/src/" },
-      to: { path: "^packages/(plugin-[^/]+|cli|testing)/" },
+      from: { path: "^src/core/" },
+      to: { path: `^src/(${PLUGIN_DIRS}|cli)/` },
     },
     {
-      name: "niente-cicli",
+      name: "testing-dipende-solo-da-contracts",
+      comment: "I9: l'harness serve a provare i plugin, non puo' tirarsi dietro il core.",
       severity: "error",
-      from: {},
-      to: { circular: true },
+      from: { path: "^packages/testing/src/" },
+      to: { path: "^src/", pathNot: "^src/contracts/" },
     },
+    { name: "niente-cicli", severity: "error", from: {}, to: { circular: true } },
     {
       name: "niente-import-di-dist",
-      comment: "Si importa il pacchetto per nome, mai il suo dist/ o il suo src/ per path.",
+      comment: "Si importa il sorgente, mai il compilato.",
       severity: "error",
-      from: { path: "^packages/" },
-      to: { path: "^packages/[^/]+/(dist)/" },
+      from: {},
+      to: { path: "^dist/" },
     },
     {
       name: "niente-orfani",
       severity: "warn",
       from: {
         orphan: true,
-        path: "^packages/",
+        path: "^(src|packages)/",
         pathNot: ["\\.d\\.ts$", "(^|/)tsconfig.*\\.json$"],
       },
       to: {},
@@ -87,9 +81,12 @@ module.exports = {
     doNotFollow: { path: "node_modules" },
     tsConfig: { fileName: "tsconfig.tests.json" },
     tsPreCompilationDeps: true,
-    enhancedResolveOptions: { exportsFields: ["exports"], conditionNames: ["import", "require", "node", "default"] },
-    // Niente includeOnly: i moduli npm devono restare nel grafo, altrimenti
-    // la regola "contracts a zero dipendenze" non potrebbe scattare.
+    enhancedResolveOptions: {
+      exportsFields: ["exports"],
+      conditionNames: ["import", "require", "node", "default"],
+    },
+    // Solo dist: i moduli npm devono restare nel grafo, altrimenti la regola
+    // "contracts a zero dipendenze" non potrebbe scattare.
     exclude: { path: "(^|/)dist/" },
     reporterOptions: { text: { highlightFocused: true } },
   },

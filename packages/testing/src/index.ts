@@ -1,6 +1,6 @@
 /**
- * @etl-js/testing - quel poco che serve per provare un plugin senza database,
- * senza file e senza motore. Dipende solo da @etl-js/contracts (I9).
+ * Harness di prova: quel poco che serve per provare un plugin senza database,
+ * senza file e senza motore. Dipende solo dai contratti (I9).
  */
 import type {
   Batch,
@@ -13,7 +13,7 @@ import type {
   Row,
   TransformerPlugin,
   Transformer,
-} from "@etl-js/contracts";
+} from "../../../src/contracts/index.js";
 
 /** Una riga di log catturata, con i suoi campi strutturati. */
 export interface LogLine {

@@ -1,19 +1,22 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
-// I test girano sui sorgenti (niente build preventiva): l'alias mappa il nome
-// pubblico del pacchetto sul suo src/, come farebbe il symlink di npm workspaces.
+const src = (path: string): string => fileURLToPath(new URL(path, import.meta.url));
+
+// I test girano sui sorgenti e passano dagli **entry point pubblici**: se un
+// subpath di `exports` sparisce o cambia forma, i test se ne accorgono.
 export default defineConfig({
   resolve: {
     alias: [
-      {
-        find: /^@etl-js\/([a-z0-9-]+)$/,
-        replacement: fileURLToPath(new URL("./packages/$1/src/index.ts", import.meta.url)),
-      },
+      { find: /^etl-js$/, replacement: src("./src/core/index.ts") },
+      { find: /^etl-js\/contracts$/, replacement: src("./src/contracts/index.ts") },
+      { find: /^etl-js\/csv$/, replacement: src("./src/csv/index.ts") },
+      { find: /^etl-js\/postgres$/, replacement: src("./src/postgres/index.ts") },
+      { find: /^etl-js\/transforms$/, replacement: src("./src/transforms/index.ts") },
+      { find: /^etl-js\/lookup$/, replacement: src("./src/lookup/index.ts") },
+      { find: /^etl-js\/cli$/, replacement: src("./src/cli/index.ts") },
+      { find: /^@etl-js\/testing$/, replacement: src("./packages/testing/src/index.ts") },
     ],
   },
-  test: {
-    environment: "node",
-    include: ["packages/*/test/**/*.test.ts", "test/**/*.test.ts"],
-  },
+  test: { environment: "node", include: ["test/**/*.test.ts", "packages/testing/test/**/*.test.ts"] },
 });

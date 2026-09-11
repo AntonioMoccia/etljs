@@ -1,29 +1,11 @@
 {
-  "files": [],
-  "references": [
-    {
-      "path": "packages/contracts"
-    },
-    {
-      "path": "packages/core"
-    },
-    {
-      "path": "packages/testing"
-    },
-    {
-      "path": "packages/plugin-csv"
-    },
-    {
-      "path": "packages/plugin-postgres"
-    },
-    {
-      "path": "packages/plugin-lookup"
-    },
-    {
-      "path": "packages/plugin-transforms"
-    },
-    {
-      "path": "packages/cli"
-    }
-  ]
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts"]
 }
