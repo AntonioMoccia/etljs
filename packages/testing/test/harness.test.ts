@@ -75,7 +75,7 @@ describe("mockCtx", () => {
   });
 
   test("chiedere un database che il test non ha dichiarato spiega cosa fare", () => {
-    expect(() => mockCtx().db("gestionale")).toThrowError(/mockCtx\(\{ databases/);
+    expect(() => mockCtx().db("principale")).toThrowError(/mockCtx\(\{ databases/);
   });
 
   test("chiedere un segreto non dichiarato non restituisce una stringa vuota", () => {
@@ -120,7 +120,7 @@ describe("recordingLogger", () => {
 
   test("i logger figli ereditano i campi e scrivono nello stesso elenco", () => {
     const log = recordingLogger();
-    log.child({ plugin: "lookup" }).info("cache mancata", { chiave: "ORD-1" });
-    expect(log.lines[0]?.fields).toEqual({ plugin: "lookup", chiave: "ORD-1" });
+    log.child({ plugin: "lookup" }).info("cache mancata", { chiave: "COD-1" });
+    expect(log.lines[0]?.fields).toEqual({ plugin: "lookup", chiave: "COD-1" });
   });
 });

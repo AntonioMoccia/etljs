@@ -201,7 +201,7 @@ export const castTransformer: Transformer = {
 
 /**
  * Converte i valori grezzi in cio' che il database si aspetta. Tutto cio' che
- * cambia da cliente a cliente - formato data, separatore decimale, parole per
+ * cambia da flusso a flusso - formato data, separatore decimale, parole per
  * vero e falso - e' un valore in questa config (I8).
  *
  * Le date escono come stringhe ISO, non come oggetti Date: un Batch deve

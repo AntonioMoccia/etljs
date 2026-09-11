@@ -2,7 +2,7 @@ import { z } from "zod";
 import { configInvalid } from "@etl-js/contracts";
 
 /**
- * Config del reader CSV. Tutto cio' che cambia da cliente a cliente sta qui,
+ * Config del reader CSV. Tutto cio' che cambia da flusso a flusso sta qui,
  * come valore: delimitatore, encoding, righe di preambolo, nomi di colonna (I8).
  */
 export const csvConfigSchema = z
@@ -18,7 +18,7 @@ export const csvConfigSchema = z
     encoding: z
       .enum(["utf8", "latin1"])
       .default("utf8")
-      .describe("Encoding del file; latin1 copre i CSV esportati da gestionali europei"),
+      .describe("Encoding del file; latin1 copre i CSV esportati da sistemi esterni europei"),
     skipRows: z
       .number()
       .int()

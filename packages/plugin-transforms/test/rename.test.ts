@@ -7,13 +7,13 @@ async function rename(config: unknown, rows: Record<string, unknown>[]) {
 }
 
 describe("rename", () => {
-  test("porta le intestazioni del cliente sui nomi del gestionale", async () => {
+  test("porta le intestazioni del file di origine sui nomi interni", async () => {
     const result = await rename(
-      { map: { "Nr Ordine": "ordine_cliente", Data: "data_consegna" } },
-      [{ "Nr Ordine": "ORD-1", Data: "03/02/2026", Altro: "x" }],
+      { map: { "Codice": "codice", Data: "data_documento" } },
+      [{ "Codice": "COD-1", Data: "03/02/2026", Altro: "x" }],
     );
     expect(result.rows).toEqual([
-      { ordine_cliente: "ORD-1", data_consegna: "03/02/2026", Altro: "x" },
+      { codice: "COD-1", data_documento: "03/02/2026", Altro: "x" },
     ]);
   });
 
@@ -33,16 +33,16 @@ describe("rename", () => {
   });
 
   test("una colonna attesa e assente viene segnalata se strict", async () => {
-    const result = await rename({ map: { "Nr Ordine": "ordine_cliente" }, strict: true }, [
+    const result = await rename({ map: { "Codice": "codice" }, strict: true }, [
       { Altro: "x" },
     ]);
     expect(result.rows).toEqual([]);
     expect(result.failed[0]).toMatchObject({ code: "RENAME_MISSING_COLUMN", severity: "reject" });
-    expect(result.failed[0]?.reason).toContain("Nr Ordine");
+    expect(result.failed[0]?.reason).toContain("Codice");
   });
 
   test("senza strict una colonna assente semplicemente non compare", async () => {
-    const result = await rename({ map: { "Nr Ordine": "ordine_cliente" } }, [{ Altro: "x" }]);
+    const result = await rename({ map: { "Codice": "codice" } }, [{ Altro: "x" }]);
     expect(result.rows).toEqual([{ Altro: "x" }]);
     expect(result.failed).toEqual([]);
   });
@@ -53,11 +53,11 @@ describe("rename", () => {
     });
   });
 
-  test("normalizza gli spazi delle intestazioni quando il cliente li cambia", async () => {
-    const result = await rename({ map: { "Nr  Ordine": "ordine" }, trimKeys: true }, [
-      { " Nr  Ordine ": "ORD-1" },
+  test("normalizza gli spazi delle intestazioni quando il flusso li cambia", async () => {
+    const result = await rename({ map: { "Cod  Articolo": "codice" }, trimKeys: true }, [
+      { " Cod  Articolo ": "COD-1" },
     ]);
-    expect(result.rows).toEqual([{ ordine: "ORD-1" }]);
+    expect(result.rows).toEqual([{ codice: "COD-1" }]);
   });
 
   test("una mappa vuota lascia tutto com'e'", async () => {

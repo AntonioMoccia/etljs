@@ -60,9 +60,9 @@ function memoryWriter(sink: { rows: Row[]; outcome: string[] }): WriterPlugin {
 
 /** CSV con `total` righe di cui `bad` hanno quantita' zero. */
 async function fixture(name: string, total: number, bad: number): Promise<string> {
-  const righe = ["Ordine;Quantita;Consegna"];
+  const righe = ["Codice;Quantita;Data"];
   for (let i = 0; i < total; i += 1) {
-    righe.push(`ORD-${i};${i < bad ? "0" : "10"};0${(i % 9) + 1}/02/2026`);
+    righe.push(`COD-${i};${i < bad ? "0" : "10"};0${(i % 9) + 1}/02/2026`);
   }
   const path = join(dir, name);
   await writeFile(path, `${righe.join("\n")}\n`, "utf8");
@@ -78,7 +78,7 @@ function definitionFor(path: string, maxFailedRatio: number): Definition {
         type: "cast",
         config: {
           Quantita: { number: { decimal: "," } },
-          Consegna: { date: "dd/MM/yyyy" },
+          Data: { date: "dd/MM/yyyy" },
         },
       },
       { type: "validate", config: { rules: [{ field: "Quantita", min: 1, severity: "reject" }] } },
@@ -152,9 +152,9 @@ describe("import parziale e run annullato", () => {
     await run(definitionFor(path, 0.2), ctx, { registry: setup(sink), runId: "run-prov" });
 
     expect(sink.rows[0]).toMatchObject({
-      Ordine: "ORD-0",
+      Codice: "COD-0",
       Quantita: 10,
-      Consegna: "2026-02-01",
+      Data: "2026-02-01",
       run_id: "run-prov",
       file_origine: path,
       riga_origine: 0,
@@ -185,11 +185,11 @@ describe("import parziale e run annullato", () => {
     await run(definitionFor(path, 1), ctx, {
       registry: setup(sink),
       maxRejectsInResult: 5,
-      events: { onRecordFailed: (event) => raccolti.push(String(event.failed.row["Ordine"])) },
+      events: { onRecordFailed: (event) => raccolti.push(String(event.failed.row["Codice"])) },
     });
 
     expect(raccolti).toHaveLength(30);
-    expect(raccolti[29]).toBe("ORD-29");
+    expect(raccolti[29]).toBe("COD-29");
   });
 });
 
@@ -223,6 +223,6 @@ describe("file di scarto della CLI", () => {
     expect(righe).toHaveLength(4);
     expect(righe[1]).toContain("VALIDATION_FAILED");
     expect(righe[1]).toContain("sotto il minimo 1");
-    expect(righe[1]).toContain("ORD-0");
+    expect(righe[1]).toContain("COD-0");
   });
 });

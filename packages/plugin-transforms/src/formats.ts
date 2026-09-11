@@ -2,7 +2,7 @@ import { configInvalid } from "@etl-js/contracts";
 
 /**
  * Interprete minimo di formati data. Non usa una libreria perche' servono
- * pochi token e ci serve un errore chiaro quando un cliente scrive "gg/mm/aaaa"
+ * pochi token e ci serve un errore chiaro quando un flusso scrive "gg/mm/aaaa"
  * invece di "dd/MM/yyyy".
  */
 interface Token {
@@ -167,7 +167,7 @@ export function isoWeeksInYear(year: number): number {
 /**
  * Il lunedi' di una settimana ISO 8601. La settimana 1 e' quella che contiene
  * il 4 gennaio, per cui la settimana 1 del 2026 comincia il 29 dicembre 2025:
- * un piano di consegna "settimana 1" non e' un piano di gennaio.
+ * un file di dati "settimana 1" non e' un piano di gennaio.
  */
 export function isoWeekMonday(year: number, week: number): string | undefined {
   if (!Number.isInteger(week) || week < 1 || week > isoWeeksInYear(year)) return undefined;

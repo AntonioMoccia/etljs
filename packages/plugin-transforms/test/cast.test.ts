@@ -120,9 +120,9 @@ describe("cast: booleani e stringhe", () => {
 
   test("string sa ripulire spazi e uniformare le maiuscole", async () => {
     const result = await cast({ codice: { string: { trim: true, case: "upper" } } }, [
-      { codice: "  ord-1 " },
+      { codice: "  cod-1 " },
     ]);
-    expect(result.rows).toEqual([{ codice: "ORD-1" }]);
+    expect(result.rows).toEqual([{ codice: "COD-1" }]);
   });
 });
 

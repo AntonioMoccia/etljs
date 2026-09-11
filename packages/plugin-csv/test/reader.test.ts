@@ -59,10 +59,10 @@ async function rowsOf(config: Record<string, unknown>, content: string | Uint8Ar
 
 describe("reader csv", () => {
   test("un CSV con intestazione diventa righe chiave/valore", async () => {
-    const rows = await rowsOf({}, "Ordine,Quantita\nORD-1,5\nORD-2,7\n");
+    const rows = await rowsOf({}, "Ordine,Quantita\nCOD-1,5\nCOD-2,7\n");
     expect(rows).toEqual([
-      { Ordine: "ORD-1", Quantita: "5" },
-      { Ordine: "ORD-2", Quantita: "7" },
+      { Ordine: "COD-1", Quantita: "5" },
+      { Ordine: "COD-2", Quantita: "7" },
     ]);
   });
 
@@ -75,9 +75,9 @@ describe("reader csv", () => {
   test("skipRows scarta il preambolo e prende l'intestazione dalla riga giusta", async () => {
     const rows = await rowsOf(
       { delimiter: ";", skipRows: 3 },
-      "Report cliente\ngenerato il 01/02/2026\n\nOrdine;Quantita\nORD-1;5\n",
+      "Report flusso\ngenerato il 01/02/2026\n\nOrdine;Quantita\nCOD-1;5\n",
     );
-    expect(rows).toEqual([{ Ordine: "ORD-1", Quantita: "5" }]);
+    expect(rows).toEqual([{ Ordine: "COD-1", Quantita: "5" }]);
   });
 
   test("header come elenco: nomi imposti a un file che non ne ha", async () => {
@@ -97,21 +97,21 @@ describe("reader csv", () => {
   });
 
   test("il BOM non sporca il nome della prima colonna", async () => {
-    const rows = await rowsOf({}, "﻿Ordine,Quantita\nORD-1,5\n");
+    const rows = await rowsOf({}, "﻿Ordine,Quantita\nCOD-1,5\n");
     expect(Object.keys(rows[0] ?? {})).toEqual(["Ordine", "Quantita"]);
   });
 
   // `trim` mangia comunque U+FEFF, che e' uno spazio a tutti gli effetti:
   // per conservare il BOM servono entrambe le opzioni spente.
   test("con bom false e trim false il BOM resta, perche' e' stato chiesto", async () => {
-    const rows = await rowsOf({ bom: false, trim: false }, "﻿Ordine\nORD-1\n");
+    const rows = await rowsOf({ bom: false, trim: false }, "﻿Ordine\nCOD-1\n");
     expect(Object.keys(rows[0] ?? {})[0]).toBe("﻿Ordine");
   });
 
   test("un file UTF-8 con BOM ma dichiarato latin1 non porta il BOM nel nome di colonna", async () => {
     const bytes = Buffer.concat([
       Buffer.from([0xef, 0xbb, 0xbf]),
-      Buffer.from("Ordine;Citta\nORD-1;Perugia\n", "latin1"),
+      Buffer.from("Ordine;Citta\nCOD-1;Perugia\n", "latin1"),
     ]);
     const rows = await rowsOf({ delimiter: ";", encoding: "latin1" }, bytes);
     expect(Object.keys(rows[0] ?? {})).toEqual(["Ordine", "Citta"]);

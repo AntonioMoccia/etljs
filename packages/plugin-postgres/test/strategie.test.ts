@@ -14,15 +14,15 @@ function sqlOf(tx: ReturnType<typeof fakeTransaction>): string[] {
 
 describe("strategia replace-by", () => {
   const config = {
-    table: "landing_piani",
+    table: "landing_righe",
     strategy: "replace-by",
-    replaceKey: ["ordine_id"],
+    replaceKey: ["anagrafica_id"],
   };
 
   test("carica in una tabella di appoggio, non direttamente nella destinazione", async () => {
     const tx = fakeTransaction();
     const session = await plugin.impl.open(config, fakeWriterCtx(tx));
-    await session.write(batch([{ ordine_id: 1, qta: 5 }]));
+    await session.write(batch([{ anagrafica_id: 1, qta: 5 }]));
 
     expect(tx.loaded[0]?.table).toMatch(/^etl_staging_/);
     expect(sqlOf(tx).some((sql) => sql.startsWith("CREATE TEMP TABLE"))).toBe(true);
@@ -31,7 +31,7 @@ describe("strategia replace-by", () => {
   test("al commit cancella per chiave e poi inserisce, dentro la stessa transazione", async () => {
     const tx = fakeTransaction();
     const session = await plugin.impl.open(config, fakeWriterCtx(tx));
-    await session.write(batch([{ ordine_id: 1, qta: 5 }]));
+    await session.write(batch([{ anagrafica_id: 1, qta: 5 }]));
     await session.close(true);
 
     const sql = sqlOf(tx);
@@ -40,27 +40,27 @@ describe("strategia replace-by", () => {
 
     expect(delete_).toBeGreaterThanOrEqual(0);
     expect(insert).toBeGreaterThan(delete_);
-    expect(sql[delete_]).toContain('"landing_piani"');
-    expect(sql[delete_]).toContain('"ordine_id"');
+    expect(sql[delete_]).toContain('"landing_righe"');
+    expect(sql[delete_]).toContain('"anagrafica_id"');
     expect(tx.outcome).toEqual(["commit"]);
   });
 
   test("cancella solo le chiavi presenti nel file, non l'intera tabella", async () => {
     const tx = fakeTransaction();
     const session = await plugin.impl.open(config, fakeWriterCtx(tx));
-    await session.write(batch([{ ordine_id: 1 }, { ordine_id: 2 }]));
+    await session.write(batch([{ anagrafica_id: 1 }, { anagrafica_id: 2 }]));
     await session.close(true);
 
     const delete_ = sqlOf(tx).find((s) => s.startsWith("DELETE FROM")) ?? "";
     // La cancellazione e' vincolata alle chiavi caricate nell'appoggio.
     expect(delete_).toContain("SELECT");
-    expect(delete_).not.toMatch(/DELETE FROM "landing_piani"\s*$/);
+    expect(delete_).not.toMatch(/DELETE FROM "landing_righe"\s*$/);
   });
 
   test("un errore a meta' non lascia ne' l'appoggio ne' la destinazione a meta'", async () => {
     const tx = fakeTransaction();
     const session = await plugin.impl.open(config, fakeWriterCtx(tx));
-    await session.write(batch([{ ordine_id: 1 }]));
+    await session.write(batch([{ anagrafica_id: 1 }]));
     await session.close(false);
 
     expect(tx.outcome).toEqual(["rollback"]);
@@ -103,34 +103,34 @@ describe("strategia upsert", () => {
   const config = {
     table: "landing",
     strategy: "upsert",
-    conflictKey: ["ordine_id"],
+    conflictKey: ["anagrafica_id"],
   };
 
   test("inserisce dall'appoggio con ON CONFLICT DO UPDATE", async () => {
     const tx = fakeTransaction();
     const session = await plugin.impl.open(config, fakeWriterCtx(tx));
-    await session.write(batch([{ ordine_id: 1, qta: 5 }]));
+    await session.write(batch([{ anagrafica_id: 1, qta: 5 }]));
     await session.close(true);
 
     const insert = sqlOf(tx).find((s) => s.startsWith("INSERT INTO")) ?? "";
-    expect(insert).toContain('ON CONFLICT ("ordine_id") DO UPDATE SET');
+    expect(insert).toContain('ON CONFLICT ("anagrafica_id") DO UPDATE SET');
     expect(insert).toContain('"qta" = EXCLUDED."qta"');
   });
 
   test("le colonne della chiave non vengono riassegnate a se stesse", async () => {
     const tx = fakeTransaction();
     const session = await plugin.impl.open(config, fakeWriterCtx(tx));
-    await session.write(batch([{ ordine_id: 1, qta: 5 }]));
+    await session.write(batch([{ anagrafica_id: 1, qta: 5 }]));
     await session.close(true);
 
     const insert = sqlOf(tx).find((s) => s.startsWith("INSERT INTO")) ?? "";
-    expect(insert).not.toContain('"ordine_id" = EXCLUDED."ordine_id"');
+    expect(insert).not.toContain('"anagrafica_id" = EXCLUDED."anagrafica_id"');
   });
 
   test("se le uniche colonne sono la chiave, il conflitto non fa nulla", async () => {
     const tx = fakeTransaction();
     const session = await plugin.impl.open(config, fakeWriterCtx(tx));
-    await session.write(batch([{ ordine_id: 1 }]));
+    await session.write(batch([{ anagrafica_id: 1 }]));
     await session.close(true);
 
     const insert = sqlOf(tx).find((s) => s.startsWith("INSERT INTO")) ?? "";

@@ -13,15 +13,15 @@ import { z } from "zod";
 import { configReader } from "./shared.js";
 
 /**
- * Porta le intestazioni del cliente sui nomi usati dal gestionale. E' il
- * plugin che rende inutile scrivere un pacchetto per cliente: cambiano le
+ * Porta le intestazioni del file di origine sui nomi usati dal database. E' il
+ * plugin che rende inutile scrivere un pacchetto per flusso: cambiano le
  * chiavi della mappa, non il codice (I8).
  */
 export const renameConfigSchema = z
   .object({
     map: z
       .record(z.string().min(1), z.string().min(1))
-      .describe("Intestazione del cliente -> nome interno"),
+      .describe("Intestazione del flusso -> nome interno"),
     keepUnmapped: z
       .boolean()
       .default(true)

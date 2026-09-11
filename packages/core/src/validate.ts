@@ -194,7 +194,7 @@ export function validate(
   if (typeof definition?.client !== "string" || definition.client.length === 0) {
     issues.push({
       path: "client",
-      message: "il nome del cliente e' obbligatorio",
+      message: "il nome del flusso e' obbligatorio",
       code: ValidationCodes.MISSING,
       severity: "error",
     });

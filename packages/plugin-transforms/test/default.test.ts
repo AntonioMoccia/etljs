@@ -48,10 +48,10 @@ describe("default", () => {
   });
 
   test("copia il valore di un altro campo quando serve la provenienza", async () => {
-    const result = await fill({ values: { codice: { fromField: "Nr Ordine" } } }, [
-      { "Nr Ordine": "ORD-1" },
+    const result = await fill({ values: { codice: { fromField: "Codice" } } }, [
+      { "Codice": "COD-1" },
     ]);
-    expect(result.rows).toEqual([{ "Nr Ordine": "ORD-1", codice: "ORD-1" }]);
+    expect(result.rows).toEqual([{ "Codice": "COD-1", codice: "COD-1" }]);
   });
 
   test("copiare da un campo assente lascia il campo assente, non undefined", async () => {

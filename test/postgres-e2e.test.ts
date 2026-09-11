@@ -53,10 +53,10 @@ function registry(): Registry {
   return new Registry().register(csv).register(castPlugin).register(postgres);
 }
 
-/** Un piano di consegna: ordine, quantita', data. */
+/** Un file di dati: codice, quantita', data. */
 async function piano(name: string, righe: [string, string, string][]): Promise<string> {
   const path = join(dir, name);
-  const testo = ["Ordine;Quantita;Consegna", ...righe.map((r) => r.join(";"))].join("\n");
+  const testo = ["Codice;Quantita;Data", ...righe.map((r) => r.join(";"))].join("\n");
   await writeFile(path, `${testo}\n`, "utf8");
   return path;
 }
@@ -70,7 +70,7 @@ function definition(path: string, strategy: "append" | "replace-by" | "upsert"):
         type: "cast",
         config: {
           Quantita: { number: { decimal: "," } },
-          Consegna: { date: "dd/MM/yyyy" },
+          Data: { date: "dd/MM/yyyy" },
         },
       },
     ],
@@ -78,7 +78,7 @@ function definition(path: string, strategy: "append" | "replace-by" | "upsert"):
       type: "postgres",
       config: {
         table: TABLE,
-        columns: ["Ordine", "Quantita", "Consegna"],
+        columns: ["Ordine", "Quantita", "Data"],
         strategy,
         ...(strategy === "replace-by" ? { replaceKey: ["Ordine"] } : {}),
         ...(strategy === "upsert" ? { conflictKey: ["Ordine"] } : {}),
@@ -100,7 +100,7 @@ suite("import verso Postgres (integrazione)", () => {
     const tx = await provider.dbWrite("default");
     await tx.exec(`DROP TABLE IF EXISTS ${TABLE}`);
     await tx.exec(
-      `CREATE TABLE ${TABLE} ("Ordine" text primary key, "Quantita" numeric, "Consegna" date)`,
+      `CREATE TABLE ${TABLE} ("Ordine" text primary key, "Quantita" numeric, "Data" date)`,
     );
     await tx.commit();
   });
@@ -115,38 +115,38 @@ suite("import verso Postgres (integrazione)", () => {
 
   test("il primo import porta a terra le righe convertite", async () => {
     const path = await piano("primo.csv", [
-      ["ORD-1", "10", "03/02/2026"],
-      ["ORD-2", "1.250,50", "04/02/2026"],
+      ["COD-1", "10", "03/02/2026"],
+      ["COD-2", "1.250,50", "04/02/2026"],
     ]);
 
     const result = await run(definition(path, "replace-by"), ctx(), { registry: registry() });
 
     expect(result.written).toBe(2);
     expect(await contenuto()).toEqual([
-      { Ordine: "ORD-1", q: "10" },
-      { Ordine: "ORD-2", q: "1250.50" },
+      { Ordine: "COD-1", q: "10" },
+      { Ordine: "COD-2", q: "1250.50" },
     ]);
   });
 
   test("rimandare il piano aggiornato sostituisce, non duplica", async () => {
     const path = await piano("secondo.csv", [
-      ["ORD-1", "99", "05/02/2026"],
-      ["ORD-3", "7", "06/02/2026"],
+      ["COD-1", "99", "05/02/2026"],
+      ["COD-3", "7", "06/02/2026"],
     ]);
 
     await run(definition(path, "replace-by"), ctx(), { registry: registry() });
 
-    // ORD-1 sostituito, ORD-3 aggiunto, ORD-2 lasciato in pace: il file
-    // riguardava solo i suoi ordini.
+    // COD-1 sostituito, COD-3 aggiunto, COD-2 lasciato in pace: il file
+    // riguardava solo i sue chiavi.
     expect(await contenuto()).toEqual([
-      { Ordine: "ORD-1", q: "99" },
-      { Ordine: "ORD-2", q: "1250.50" },
-      { Ordine: "ORD-3", q: "7" },
+      { Ordine: "COD-1", q: "99" },
+      { Ordine: "COD-2", q: "1250.50" },
+      { Ordine: "COD-3", q: "7" },
     ]);
   });
 
   test("lo stesso file importato due volte lascia la tabella identica", async () => {
-    const path = await piano("idempotente.csv", [["ORD-4", "42", "07/02/2026"]]);
+    const path = await piano("idempotente.csv", [["COD-4", "42", "07/02/2026"]]);
 
     await run(definition(path, "replace-by"), ctx(), { registry: registry() });
     const dopoUno = await contenuto();
@@ -160,8 +160,8 @@ suite("import verso Postgres (integrazione)", () => {
     // La quantita' non e' un numero: il cast scarta la riga, ma la soglia
     // di scarto e' zero, quindi il run viene annullato dopo aver gia' caricato.
     const path = await piano("rotto.csv", [
-      ["ORD-5", "1", "08/02/2026"],
-      ["ORD-6", "non un numero", "09/02/2026"],
+      ["COD-5", "1", "08/02/2026"],
+      ["COD-6", "non un numero", "09/02/2026"],
     ]);
     const def = { ...definition(path, "replace-by"), policy: { maxFailedRatio: 0 } };
 
@@ -173,12 +173,12 @@ suite("import verso Postgres (integrazione)", () => {
   });
 
   test("upsert aggiorna le colonne e lascia intatte le altre righe", async () => {
-    const path = await piano("upsert.csv", [["ORD-1", "5", "10/02/2026"]]);
+    const path = await piano("upsert.csv", [["COD-1", "5", "10/02/2026"]]);
 
     await run(definition(path, "upsert"), ctx(), { registry: registry() });
 
     const righe = await contenuto();
-    expect(righe.find((r) => r["Ordine"] === "ORD-1")).toEqual({ Ordine: "ORD-1", q: "5" });
-    expect(righe.find((r) => r["Ordine"] === "ORD-2")).toEqual({ Ordine: "ORD-2", q: "1250.50" });
+    expect(righe.find((r) => r["Ordine"] === "COD-1")).toEqual({ Ordine: "COD-1", q: "5" });
+    expect(righe.find((r) => r["Ordine"] === "COD-2")).toEqual({ Ordine: "COD-2", q: "1250.50" });
   });
 });

@@ -1,9 +1,9 @@
-Piano di consegna - ACME S.p.A.
+Estrazione dati - ACME S.p.A.
 Generato il 03/02/2026
 
-Nr Ordine;Data;Quantita;Città
-ORD-1001;03/02/2026;1.250,50;Perugia
-ORD-1002;04/02/2026;12;Città di Castello
+Codice;Data;Quantita;Città
+COD-1001;03/02/2026;1.250,50;Perugia
+COD-1002;04/02/2026;12;Città di Castello
 ;;;
-ORD-1003;05/02/2026;7,5;Assisi
+COD-1003;05/02/2026;7,5;Assisi
 TOTALE;;1.270,00;

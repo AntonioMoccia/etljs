@@ -14,7 +14,7 @@
     "type": "postgres",
     "config": {
       "db": "principale",
-      "table": "landing_piani_consegna"
+      "table": "landing_righe"
     }
   },
   "policy": {

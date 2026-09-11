@@ -144,8 +144,8 @@ class PostgresSession implements WriteSession {
         .map((key) => `t.${escapeIdentifier(key)} = s.${escapeIdentifier(key)}`)
         .join(" AND ");
       const keyList = keys.map((key) => escapeIdentifier(key)).join(", ");
-      // Si cancellano solo le chiavi presenti in questo file: il cliente ha
-      // rimandato il piano di quegli ordini, non di tutti.
+      // Si cancellano solo le chiavi presenti in questo file: il flusso ha
+      // rimandato il piano di quei record, non di tutti.
       await this.tx.exec(
         `DELETE FROM ${target} AS t USING (SELECT DISTINCT ${keyList} FROM ${source}) AS s WHERE ${join}`,
       );

@@ -36,7 +36,7 @@ const MAX_PARAMS_PER_QUERY = 30_000;
 type CacheEntry = { kind: "hit"; row: Row } | { kind: "missing" } | { kind: "ambiguous"; count: number };
 
 /**
- * Cache per run: la stessa chiave ricorre spesso in un piano di consegna, e
+ * Cache per run: la stessa chiave ricorre spesso in un file di dati, e
  * richiederla a ogni lotto sarebbe uno spreco. La chiave della cache include
  * l'identita' della config, perche' due lookup diversi nella stessa pipeline
  * condividono questa istanza del transformer.

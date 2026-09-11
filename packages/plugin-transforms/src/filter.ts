@@ -17,8 +17,8 @@ import {
 
 /**
  * Butta via le righe che non sono dati: intestazioni ripetute, righe di totale,
- * righe vuote, righe senza chiave. Un CSV di cliente ne e' pieno, e nessuna di
- * esse deve arrivare al gestionale.
+ * righe vuote, righe senza chiave. Un CSV di flusso ne e' pieno, e nessuna di
+ * esse deve arrivare al database.
  */
 const conditionSchema = z
   .object({

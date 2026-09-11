@@ -86,7 +86,7 @@ export const defaultTransformer: Transformer = {
 };
 
 /**
- * Riempie i campi che il cliente non manda. Non scarta mai nulla: se un campo
+ * Riempie i campi che il flusso non manda. Non scarta mai nulla: se un campo
  * obbligatorio manca ed e' un problema, e' `validate` a doverlo dire.
  *
  * `fromMeta` marca ogni riga con la sua provenienza (run, file, numero di riga):

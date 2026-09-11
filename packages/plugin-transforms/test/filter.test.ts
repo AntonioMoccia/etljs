@@ -7,31 +7,31 @@ async function filter(config: unknown, rows: Record<string, unknown>[]) {
 }
 
 describe("filter", () => {
-  test("scarta le righe col campo vuoto, che e' il caso del piano di consegna", async () => {
+  test("scarta le righe col campo vuoto, che e' il caso del file di dati", async () => {
     const result = await filter({ drop: [{ field: "Ordine", empty: true }] }, [
-      { Ordine: "ORD-1" },
+      { Ordine: "COD-1" },
       { Ordine: "" },
       { Ordine: null },
       { Ordine: "   " },
     ]);
-    expect(result.rows).toEqual([{ Ordine: "ORD-1" }]);
+    expect(result.rows).toEqual([{ Ordine: "COD-1" }]);
   });
 
   test("scarta la riga dei totali riconoscendola da un'espressione", async () => {
     const result = await filter({ drop: [{ field: "Ordine", matches: "^(TOTALE|TOT\\.)" }] }, [
-      { Ordine: "ORD-1" },
+      { Ordine: "COD-1" },
       { Ordine: "TOTALE" },
       { Ordine: "TOT. GENERALE" },
     ]);
-    expect(result.rows).toEqual([{ Ordine: "ORD-1" }]);
+    expect(result.rows).toEqual([{ Ordine: "COD-1" }]);
   });
 
   test("l'espressione e' ancorata ai dati, non al caso: si puo' chiedere ignoreCase", async () => {
     const result = await filter(
       { drop: [{ field: "Ordine", matches: "^totale", ignoreCase: true }] },
-      [{ Ordine: "TOTALE" }, { Ordine: "ORD-1" }],
+      [{ Ordine: "TOTALE" }, { Ordine: "COD-1" }],
     );
-    expect(result.rows).toEqual([{ Ordine: "ORD-1" }]);
+    expect(result.rows).toEqual([{ Ordine: "COD-1" }]);
   });
 
   test("scarta le righe completamente vuote", async () => {
@@ -59,20 +59,20 @@ describe("filter", () => {
   });
 
   test("keep tiene solo cio' che corrisponde", async () => {
-    const result = await filter({ keep: [{ field: "tipo", in: ["consegna", "reso"] }] }, [
-      { tipo: "consegna" },
+    const result = await filter({ keep: [{ field: "tipo", in: ["attivo", "sospeso"] }] }, [
+      { tipo: "attivo" },
       { tipo: "preventivo" },
-      { tipo: "reso" },
+      { tipo: "sospeso" },
     ]);
-    expect(result.rows.map((r) => r["tipo"])).toEqual(["consegna", "reso"]);
+    expect(result.rows.map((r) => r["tipo"])).toEqual(["attivo", "sospeso"]);
   });
 
   test("keep e drop insieme: prima si tiene, poi si scarta", async () => {
     const result = await filter(
-      { keep: [{ field: "tipo", equals: "consegna" }], drop: [{ field: "qta", equals: "0" }] },
-      [{ tipo: "consegna", qta: "5" }, { tipo: "consegna", qta: "0" }, { tipo: "reso", qta: "5" }],
+      { keep: [{ field: "tipo", equals: "attivo" }], drop: [{ field: "qta", equals: "0" }] },
+      [{ tipo: "attivo", qta: "5" }, { tipo: "attivo", qta: "0" }, { tipo: "sospeso", qta: "5" }],
     );
-    expect(result.rows).toEqual([{ tipo: "consegna", qta: "5" }]);
+    expect(result.rows).toEqual([{ tipo: "attivo", qta: "5" }]);
   });
 
   test("in silenzio per scelta: un filtro non e' uno scarto", async () => {

@@ -5,7 +5,7 @@ Stato: decisioni approvate, da pianificare
 
 ## In una pagina
 
-**Che cos'e' etl-js.** Una libreria npm che prende il file di un cliente, lo trasforma e lo scrive
+**Che cos'e' etl-js.** Una libreria npm che prende il file di un flusso, lo trasforma e lo scrive
 in una tabella. Non ha stato, non ha file di configurazione, non sa chi sia l'utente. Chi la usa -
 un'applicazione, la CLI, una GUI - le passa connessioni, sorgenti e plugin. Resta un **repo suo,
 pubblicabile**: il progetto piu' grande la installa.
@@ -58,7 +58,7 @@ nessun altro puo' piu' usarla - diventa impossibile invece che sconsigliato.
 |---|---|---|
 | **host** | credenziali, dove stanno i byte, quando parte un run, dove finiscono i risultati | l'ambiente |
 | **core** | lotti, transazioni, soglie, classificazione degli errori, validazione | mai |
-| **plugin** | cio' che cambia da cliente a cliente **ed e' esprimibile come dato** | il cliente |
+| **plugin** | cio' che cambia da flusso a flusso **ed e' esprimibile come dato** | il flusso |
 
 E' la regola gia' implicita in I1/I2/I6: qui viene scritta perche' sia applicabile a una richiesta
 nuova senza doverla dedurre ogni volta.
@@ -66,7 +66,7 @@ nuova senza doverla dedurre ogni volta.
 ## A2 - Reader e writer non hanno bisogno di regole
 
 **Un reader copre solo il formato**, mai la provenienza: aprire la sorgente e' gia' compito
-dell'host via `ctx.openInput`. Se un cliente passa da FTP a S3, nessun plugin cambia. Un reader
+dell'host via `ctx.openInput`. Se un'origine passa da FTP a S3, nessun plugin cambia. Un reader
 nuovo serve solo per un *formato* nuovo, e i formati sono pochi: `csv`, `excel`, `json/ndjson`,
 `xml`, tracciato a lunghezza fissa.
 
@@ -84,7 +84,7 @@ richiesta.
 
 **Regola d'ammissione**, da scrivere in `CLAUDE.md`:
 
-> Entra nella libreria standard solo un transformer che serve ad **almeno tre clienti diversi** e
+> Entra nella libreria standard solo un transformer che serve ad **almeno tre flussi diversi** e
 > che **non nomina nessun dominio**. Tutto il resto e' un plugin che vive nel repo di chi ne ha
 > bisogno.
 
@@ -98,7 +98,7 @@ dipendenze.
 
 Serve a tutti e chiude un difetto reale: `upsert` con la stessa chiave due volte nello stesso file
 fa fallire l'intero run con *"ON CONFLICT DO UPDATE command cannot affect row a second time"*, e un
-CSV di gestionale con una riga esportata due volte e' la norma.
+CSV di sistemi esterni con una riga esportata due volte e' la norma.
 
 Tiene la **prima** occorrenza: "prima" e' in streaming, "ultima" richiederebbe tutto il file in
 memoria. Chi ha bisogno che vinca l'ultima riga usa la strategia `replace-by`, che cancella e
@@ -117,7 +117,7 @@ motore (B3), la convenzione npm diventa **una strategia di caricamento fra tre**
 | Modo | Cerimonia | Per chi |
 |---|---|---|
 | **Registrazione diretta**: l'ospite importa l'oggetto e chiama `registry.register(plugin)` | zero, funziona gia' oggi | un'applicazione che incorpora etl-js e ha i propri transformer di dominio |
-| **Da una cartella**: il loader importa i `.js` da una cartella indicata dall'ospite | un file, nessun package.json | il plugin custom di un cliente; la GUI che li fa "installare" |
+| **Da una cartella**: il loader importa i `.js` da una cartella indicata dall'ospite | un file, nessun package.json | il plugin custom di un flusso; la GUI che li fa "installare" |
 | **Da npm**: come oggi | package.json, versione, pubblicazione | plugin destinati a essere condivisi e versionati |
 
 ## B2 - Un plugin custom e' un file senza dipendenze
@@ -150,7 +150,7 @@ apposta.
 Tre guadagni:
 
 - il modello di fiducia diventa una scelta di **chi installa** - tutto (interno), solo gli approvati
-  per quel cliente (SaaS), un bundle fisso (on-premise): **la decisione rimandata resta
+  per quel flusso (SaaS), un bundle fisso (on-premise): **la decisione rimandata resta
   rimandabile**;
 - `core` smette di contenere un `import()` dinamico, fastidio concreto per chi impacchetta la GUI
   con Vite o webpack;
@@ -342,14 +342,14 @@ Domanda inevitabile quando si installa da npm: "dove metto i file di configurazi
 
 E' cio' che "libreria senza stato" gia' significa in `CLAUDE.md`, detto in modo utilizzabile.
 
-**Corollario da scrivere accanto a I8:** le Definition diventano venti file quando i clienti sono
+**Corollario da scrivere accanto a I8:** le Definition diventano venti file quando i flussi sono
 venti. Stanno nel progetto ospite, **mai** dentro il pacchetto. `examples/` resta quello che e'.
 
 ## D3 - La GUI si costruisce sopra `preview()`
 
 Il `configSchema` permette alla GUI di disegnare il form di ogni stadio, ma **non le dice quali
 campi della riga esistono all'ingresso di quello stadio**: non puo' offrire un menu con
-`ordine_cliente, data_consegna, quantita`.
+`codice, data_documento, quantita`.
 
 Si sceglie **`preview()`**: per sapere che campi entrano nello stadio *k*, la GUI chiama `preview()`
 su una Definition con i **primi k-1** transformer. Il risultato e' provatamente identico a quello
@@ -419,7 +419,7 @@ Ogni passo si chiude con `npm run check` verde: e' il criterio di done gia' in u
 | Rischio | Mitigazione |
 |---|---|
 | C1 tocca tutti i transformer insieme | Sono 6 file piccoli con test propri; la suite e' verde oggi e deve restarlo a ogni passo |
-| La regola d'ammissione verra' aggirata sotto la pressione di un cliente che paga | Sta scritta in `CLAUDE.md` accanto agli invarianti, dove si legge prima di aggiungere codice |
+| La regola d'ammissione verra' aggirata sotto la pressione di un flusso che paga | Sta scritta in `CLAUDE.md` accanto agli invarianti, dove si legge prima di aggiungere codice |
 | `flush()` resta senza utenti reali anche dopo | Accettato: e' l'unico modo per lasciare aperto il caso aggregazione a chi scrive plugin fuori dal repo |
 | Il loader spostato rompe il caricamento per nome | Il test `cli > l'esempio completo e' valido con i plugin caricati da npm` lo copre gia' |
 | Due pacchetti in piu' da pubblicare e versionare | Accettato: e' il prezzo per cui B3 e' strutturale e B4 esiste. Chi non ne ha bisogno non li installa |

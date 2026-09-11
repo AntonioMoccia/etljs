@@ -14,7 +14,7 @@ const common = {
 
 const numberOptions = z
   .object({
-    decimal: z.string().length(1).default(".").describe("Separatore decimale del cliente"),
+    decimal: z.string().length(1).default(".").describe("Separatore decimale del flusso"),
     thousands: z.string().length(1).optional().describe("Separatore delle migliaia"),
     strip: z.string().optional().describe("Caratteri da togliere prima di leggere il numero"),
   })
@@ -51,7 +51,7 @@ export const castFieldSchema = z.union([
     .strict(),
 ]);
 
-/** La config e' una mappa campo -> conversione: nessun nome di cliente, solo valori (I8). */
+/** La config e' una mappa campo -> conversione: nessun nome di flusso, solo valori (I8). */
 export const castConfigSchema = z.record(z.string().min(1), castFieldSchema);
 
 export type CastConfig = z.infer<typeof castConfigSchema>;

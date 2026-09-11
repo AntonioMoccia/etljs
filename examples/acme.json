@@ -15,7 +15,7 @@
       "config": {
         "drop": [
           {
-            "field": "Nr Ordine",
+            "field": "Codice",
             "empty": true
           }
         ]
@@ -25,8 +25,8 @@
       "type": "rename",
       "config": {
         "map": {
-          "Nr Ordine": "ordine_cliente",
-          "Data": "data_consegna",
+          "Codice": "codice",
+          "Data": "data_documento",
           "Quantita": "quantita"
         }
       }
@@ -34,7 +34,7 @@
     {
       "type": "cast",
       "config": {
-        "data_consegna": {
+        "data_documento": {
           "date": "dd/MM/yyyy"
         },
         "quantita": {
@@ -49,11 +49,11 @@
       "type": "lookup",
       "config": {
         "db": "principale",
-        "table": "ordini",
+        "table": "anagrafica",
         "on": [
-          "ordine_cliente"
+          "codice"
         ],
-        "select": "ordine_id",
+        "select": "anagrafica_id",
         "onMissing": "reject"
       }
     },
@@ -67,7 +67,7 @@
             "severity": "reject"
           },
           {
-            "field": "data_consegna",
+            "field": "data_documento",
             "notBefore": "today",
             "severity": "warn"
           }
@@ -98,10 +98,10 @@
     "type": "postgres",
     "config": {
       "db": "principale",
-      "table": "landing_piani_consegna",
+      "table": "landing_righe",
       "strategy": "replace-by",
       "replaceKey": [
-        "ordine_id"
+        "anagrafica_id"
       ]
     }
   },

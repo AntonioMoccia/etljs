@@ -40,12 +40,12 @@ describe("validate", () => {
   });
 
   test("required coglie il campo assente e quello vuoto", async () => {
-    const result = await check({ rules: [{ field: "ordine", required: true }] }, [
-      { ordine: "ORD-1" },
-      { ordine: "" },
+    const result = await check({ rules: [{ field: "codice", required: true }] }, [
+      { codice: "COD-1" },
+      { codice: "" },
       { altro: 1 },
     ]);
-    expect(result.rows).toEqual([{ ordine: "ORD-1" }]);
+    expect(result.rows).toEqual([{ codice: "COD-1" }]);
     expect(result.failed).toHaveLength(2);
   });
 
@@ -58,12 +58,12 @@ describe("validate", () => {
         ],
       },
       [
-        { qta: 50, codice: "ORD-1" },
-        { qta: 500, codice: "ORD-1" },
+        { qta: 50, codice: "COD-1" },
+        { qta: 500, codice: "COD-1" },
         { qta: 50, codice: "AB" },
       ],
     );
-    expect(result.rows).toEqual([{ qta: 50, codice: "ORD-1" }]);
+    expect(result.rows).toEqual([{ qta: 50, codice: "COD-1" }]);
     expect(result.failed).toHaveLength(2);
   });
 
@@ -71,25 +71,25 @@ describe("validate", () => {
     const result = await check(
       {
         rules: [
-          { field: "codice", matches: "^ORD-\\d+$" },
+          { field: "codice", matches: "^COD-\\d+$" },
           { field: "stato", in: ["aperto", "chiuso"] },
         ],
       },
       [
-        { codice: "ORD-1", stato: "aperto" },
+        { codice: "COD-1", stato: "aperto" },
         { codice: "XYZ", stato: "aperto" },
-        { codice: "ORD-2", stato: "boh" },
+        { codice: "COD-2", stato: "boh" },
       ],
     );
-    expect(result.rows).toEqual([{ codice: "ORD-1", stato: "aperto" }]);
+    expect(result.rows).toEqual([{ codice: "COD-1", stato: "aperto" }]);
     expect(result.failed).toHaveLength(2);
   });
 
   test("notBefore today confronta con la data odierna", async () => {
     vi.useFakeTimers({ now: new Date("2026-02-10T09:00:00Z") });
     const result = await check(
-      { rules: [{ field: "consegna", notBefore: "today", severity: "warn" }] },
-      [{ consegna: "2026-02-15" }, { consegna: "2026-02-01" }, { consegna: "2026-02-10" }],
+      { rules: [{ field: "data_documento", notBefore: "today", severity: "warn" }] },
+      [{ data_documento: "2026-02-15" }, { data_documento: "2026-02-01" }, { data_documento: "2026-02-10" }],
     );
     expect(result.rows).toHaveLength(3);
     expect(result.failed).toHaveLength(1);
@@ -98,16 +98,16 @@ describe("validate", () => {
 
   test("notBefore e notAfter accettano anche una data fissa", async () => {
     const result = await check(
-      { rules: [{ field: "consegna", notBefore: "2026-01-01", notAfter: "2026-12-31" }] },
-      [{ consegna: "2026-06-01" }, { consegna: "2025-12-31" }, { consegna: "2027-01-01" }],
+      { rules: [{ field: "data_documento", notBefore: "2026-01-01", notAfter: "2026-12-31" }] },
+      [{ data_documento: "2026-06-01" }, { data_documento: "2025-12-31" }, { data_documento: "2027-01-01" }],
     );
-    expect(result.rows).toEqual([{ consegna: "2026-06-01" }]);
+    expect(result.rows).toEqual([{ data_documento: "2026-06-01" }]);
     expect(result.failed).toHaveLength(2);
   });
 
   test("una data non leggibile viene segnalata invece di passare inosservata", async () => {
-    const result = await check({ rules: [{ field: "consegna", notBefore: "2026-01-01" }] }, [
-      { consegna: "03/02/2026" },
+    const result = await check({ rules: [{ field: "data_documento", notBefore: "2026-01-01" }] }, [
+      { data_documento: "03/02/2026" },
     ]);
     expect(result.failed[0]?.reason).toContain("non e' una data");
   });
@@ -116,23 +116,23 @@ describe("validate", () => {
     const ctx = mockCtx();
     const result = await testTransformer(plugin, {
       batches: [
-        batchOf([{ codice: "ORD-1" }, { codice: "ORD-2" }], { runId: ctx.runId }),
-        batchOf([{ codice: "ORD-1" }], { runId: ctx.runId, offset: 2 }),
+        batchOf([{ codice: "COD-1" }, { codice: "COD-2" }], { runId: ctx.runId }),
+        batchOf([{ codice: "COD-1" }], { runId: ctx.runId, offset: 2 }),
       ],
       config: { rules: [{ field: "codice", unique: true }] },
       ctx,
     });
-    expect(result.rows.map((r) => r["codice"])).toEqual(["ORD-1", "ORD-2"]);
+    expect(result.rows.map((r) => r["codice"])).toEqual(["COD-1", "COD-2"]);
     expect(result.failed).toHaveLength(1);
     expect(result.failed[0]).toMatchObject({ offset: 2, code: "VALIDATION_FAILED" });
   });
 
   test("un messaggio su misura sostituisce quello automatico", async () => {
     const result = await check(
-      { rules: [{ field: "quantita", min: 1, message: "il cliente non puo' ordinare zero pezzi" }] },
+      { rules: [{ field: "quantita", min: 1, message: "la quantita' non puo' essere zero" }] },
       [{ quantita: 0 }],
     );
-    expect(result.failed[0]?.reason).toBe("il cliente non puo' ordinare zero pezzi");
+    expect(result.failed[0]?.reason).toBe("la quantita' non puo' essere zero");
   });
 
   test("una riga che viola due regole viene segnalata due volte ma scartata una", async () => {

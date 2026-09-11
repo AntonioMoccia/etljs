@@ -17,7 +17,7 @@ export interface Policy {
 }
 
 /**
- * La descrizione completa di un'importazione: un cliente = un file di questi (I8).
+ * La descrizione completa di un'importazione: un flusso = un file di questi (I8).
  * Deve essere interamente serializzabile in JSON, perche' una GUI dovra' produrla.
  */
 export interface Definition {

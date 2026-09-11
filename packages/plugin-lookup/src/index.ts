@@ -6,7 +6,7 @@ import { lookupTransformer } from "./lookup.js";
 /**
  * Collega le righe in arrivo a dati gia' presenti su un database, in batch e
  * in sola lettura. E' il plugin che rende utile tutto il resto: senza di lui
- * un CSV di piani di consegna non sa a quale ordine appartiene.
+ * un CSV di flussi di dati non sa a quale record appartiene.
  */
 export const plugin: TransformerPlugin = {
   manifest: {

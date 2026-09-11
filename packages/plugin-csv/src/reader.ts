@@ -39,7 +39,7 @@ async function* decode(
         first = false;
         if (config.bom) {
           // Un file salvato UTF-8-BOM ma dichiarato latin1 e' un classico dei
-          // gestionali: il BOM arriva come tre caratteri, non come uno.
+          // sistemi esterni: il BOM arriva come tre caratteri, non come uno.
           if (text.startsWith(BOM_UTF8)) text = text.slice(BOM_UTF8.length);
           else if (text.startsWith(BOM_COME_LATIN1)) text = text.slice(BOM_COME_LATIN1.length);
         }

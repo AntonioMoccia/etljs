@@ -4,7 +4,7 @@ import { csvConfigSchema } from "./config.js";
 import { csvReader } from "./reader.js";
 
 /**
- * Reader CSV in streaming. Un cliente non ha mai un plugin proprio: ha solo
+ * Reader CSV in streaming. Un flusso non ha mai un plugin proprio: ha solo
  * valori diversi in questa config (I8).
  */
 export const plugin: ReaderPlugin = {

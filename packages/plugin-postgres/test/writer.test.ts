@@ -11,20 +11,20 @@ describe("writer postgres", () => {
   test("apre la transazione sul database logico indicato dalla config", async () => {
     const tx = fakeTransaction();
     const ctx = fakeWriterCtx(tx);
-    const session = await plugin.impl.open({ table: "landing", db: "gestionale" }, ctx);
+    const session = await plugin.impl.open({ table: "landing", db: "principale" }, ctx);
     await session.close(true);
-    expect(ctx.openedDbs).toEqual(["gestionale"]);
+    expect(ctx.openedDbs).toEqual(["principale"]);
   });
 
   test("carica le righe con bulkLoad su tabella e colonne del primo lotto", async () => {
     const tx = fakeTransaction();
     const session = await plugin.impl.open({ table: "landing" }, fakeWriterCtx(tx));
-    await session.write(batch([{ ordine_id: 1, qta: 5 }, { ordine_id: 2, qta: 7 }]));
+    await session.write(batch([{ anagrafica_id: 1, qta: 5 }, { anagrafica_id: 2, qta: 7 }]));
     await session.close(true);
     expect(tx.loaded).toEqual([
       {
         table: "landing",
-        columns: ["ordine_id", "qta"],
+        columns: ["anagrafica_id", "qta"],
         rows: [
           [1, 5],
           [2, 7],
@@ -56,12 +56,12 @@ describe("writer postgres", () => {
   test("le colonne dichiarate in config vincono sulle chiavi del primo lotto", async () => {
     const tx = fakeTransaction();
     const session = await plugin.impl.open(
-      { table: "landing", columns: ["qta", "ordine_id"] },
+      { table: "landing", columns: ["qta", "anagrafica_id"] },
       fakeWriterCtx(tx),
     );
-    await session.write(batch([{ ordine_id: 1, qta: 5 }]));
+    await session.write(batch([{ anagrafica_id: 1, qta: 5 }]));
     await session.close(true);
-    expect(tx.loaded[0]?.columns).toEqual(["qta", "ordine_id"]);
+    expect(tx.loaded[0]?.columns).toEqual(["qta", "anagrafica_id"]);
     expect(tx.loaded[0]?.rows).toEqual([[5, 1]]);
   });
 
