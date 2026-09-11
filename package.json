@@ -73,8 +73,8 @@
     "test": "vitest run",
     "check:boundaries": "depcruise src packages --config .dependency-cruiser.cjs",
     "check:docs": "vitest run --config vitest.docs.config.ts",
-    "check": "npm run build && npm run typecheck:tests && npm test && npm run check:boundaries",
-    "prepublishOnly": "npm run check"
+    "check": "tsc -p tsconfig.json && tsc -p tsconfig.tests.json && vitest run && depcruise src packages --config .dependency-cruiser.cjs",
+    "prepublishOnly": "tsc -p tsconfig.json && tsc -p tsconfig.tests.json && vitest run && depcruise src packages --config .dependency-cruiser.cjs"
   },
   "dependencies": {
     "ajv": "^8.17.1",
