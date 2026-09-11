@@ -4,7 +4,6 @@ import {
   type Batch,
   type Definition,
   type Failed,
-  type Plugin,
   type PluginKind,
   type PluginOfKind,
   type RunResult,
@@ -20,18 +19,9 @@ import { emit, type RunEvents } from "./events.js";
 import { assertValid } from "./validate.js";
 import { nullLogger, readOnlyCtx, writerCtx, type HostCtx } from "./context.js";
 
-/**
- * Come si procura un plugin dato il suo nome. La Registry ne e' l'implementazione
- * sincrona; il loader dinamico della fase 2 ne e' un'altra. Il core non sa
- * quali plugin esistano: sa solo chiedere (I2).
- */
-export type PluginResolver = (name: string) => Promise<Plugin>;
-
 export interface RunOptions {
   /** Plugin gia' disponibili. Default: il registry di processo. */
   registry?: Registry;
-  /** Risolutore per i nomi assenti dal registry (loader dinamico). */
-  resolve?: PluginResolver;
   events?: RunEvents;
   /** Identificativo del run; se assente ne viene generato uno. */
   runId?: string;
@@ -73,23 +63,18 @@ export async function run(
   const events = options.events;
   const baseLog = (ctx.log ?? nullLogger()).child({ runId, client: definition.client });
 
-  const resolve = async <K extends PluginKind>(
-    name: string,
-    kind: K,
-  ): Promise<PluginOfKind<K>> => {
-    if (!registry.has(name) && options.resolve) {
-      registry.register(await options.resolve(name));
-    }
-    return registry.require(name, kind);
-  };
+  // I plugin li fornisce chi chiama, gia' collegati: il core sa solo chiederli
+  // per nome al registry, e non ha idea di quali esistano (I2).
+  const resolve = <K extends PluginKind>(name: string, kind: K): PluginOfKind<K> =>
+    registry.require(name, kind);
 
-  const reader = await resolve(definition.source.type, "reader");
+  const reader = resolve(definition.source.type, "reader");
   const transformSteps: Step<Transformer>[] = [];
   for (const step of definition.transform ?? []) {
-    const plugin = await resolve(step.type, "transformer");
+    const plugin = resolve(step.type, "transformer");
     transformSteps.push({ name: step.type, config: step.config, impl: plugin.impl });
   }
-  const writer = await resolve(definition.destination.type, "writer");
+  const writer = resolve(definition.destination.type, "writer");
 
   // Tutti gli stadi sono risolti: ora la Definition si puo' controllare per
   // intero e fallire subito, prima di leggere una riga o aprire una transazione.

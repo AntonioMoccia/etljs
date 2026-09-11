@@ -2,7 +2,7 @@
  * @etl-js/core - il motore. Sa eseguire una Definition, non sa quali plugin
  * esistano: li riceve gia' pronti (Registry) o li carica per nome (fase 2).
  */
-export { run, type RunOptions, type PluginResolver } from "./pipeline.js";
+export { run, type RunOptions } from "./pipeline.js";
 export { createEngine, type Engine, type EngineRunOptions } from "./engine.js";
 export { Registry, defaultRegistry, assertUsableManifest } from "./registry.js";
 export {
@@ -26,13 +26,6 @@ export {
   type InputResolver,
   type FileInputOptions,
 } from "./input.js";
-export {
-  loadPlugin,
-  createLoader,
-  candidateSpecifiers,
-  DEFAULT_PREFIXES,
-  type LoaderOptions,
-} from "./loader.js";
 export {
   readOnlyCtx,
   writerCtx,
