@@ -89,8 +89,8 @@ giro due versioni della stessa cosa. E' lo stesso vincolo di Node-RED e n8n, per
 Nel frattempo un plugin di terzi si usa come qualunque dipendenza:
 
 ```ts
-import maiuscolo from "@acme/etl-plugin-maiuscolo";
-const engine = createEngine().use(csv).use(maiuscolo).use(postgres);
+import { maiuscoloTransformer } from "@acme/etl-plugin-maiuscolo";
+const engine = createEngine().use(csvReader).use(maiuscoloTransformer).use(postgresWriter);
 ```
 
 ## Il core non ricorda niente

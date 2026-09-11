@@ -11,10 +11,10 @@ import {
   createEngine, run, validate, describePlugin, listPlugins, preview,
   Registry, createFileInput, createPostgresProvider, withRetry,
 } from "etl-js";
-import csv from "etl-js/csv";
-import postgres from "etl-js/postgres";
-import { plugins as transforms } from "etl-js/transforms";
-import lookup from "etl-js/lookup";
+import { csvReader } from "etl-js/csv";
+import { postgresWriter } from "etl-js/postgres";
+import { transformers } from "etl-js/transforms";
+import { lookupTransformer } from "etl-js/lookup";
 ```
 
 ## `createEngine()`
@@ -23,9 +23,9 @@ Il modo normale di usare la libreria: si collegano i plugin e si esegue.
 
 ```ts
 const engine = createEngine()
-  .use(csv)
-  .use(postgres)
-  .useAll(transforms);
+  .use(csvReader)
+  .use(postgresWriter)
+  .useAll(transformers);
 
 const result = await engine.run(definition, ctx);
 ```
@@ -36,6 +36,19 @@ const result = await engine.run(definition, ctx);
 | `useAll(plugins)` | collega un elenco, comodo coi pacchetti che ne contengono piu' d'uno |
 | `run(definition, ctx, options?)` | esegue con i plugin collegati |
 | `registry` | il registry sottostante, per `describePlugin` e `listPlugins` |
+
+**Il nome dice il tipo.** Ogni plugin incluso si esporta come `<nome><Tipo>`:
+
+| Import | Tipo |
+|---|---|
+| `import { csvReader } from "etl-js/csv"` | reader |
+| `import { postgresWriter } from "etl-js/postgres"` | writer |
+| `import { lookupTransformer } from "etl-js/lookup"` | transformer |
+| `import { castTransformer, filterTransformer, ... } from "etl-js/transforms"` | transformer |
+| `import { transformers } from "etl-js/transforms"` | i cinque insieme, per `useAll` |
+
+Non ci sono default export: `use(csvReader)` dice cosa entra nella pipeline e con che ruolo, `use(csv)`
+no. E' la stessa convenzione che conviene seguire in un plugin tuo.
 
 E' una facciata sottile sopra `Registry` e `run()`: non aggiunge comportamento. Collegare due plugin
 con lo stesso nome lancia, come fa `Registry.register`.
@@ -51,7 +64,7 @@ l'engine.
 Il livello sotto `createEngine`: esegue un'importazione con un `Registry` che costruisci tu.
 
 ```ts
-const registry = new Registry().register(csv).register(postgres);
+const registry = new Registry().register(csvReader).register(postgresWriter);
 const result: RunResult = await run(definition, ctx, { registry });
 ```
 

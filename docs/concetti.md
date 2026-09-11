@@ -66,7 +66,7 @@ Il motore mette in fila questi tre e conta. Non sa cosa siano.
 **Come ci arrivano.** Glieli passi tu, esplicitamente:
 
 ```ts
-const engine = createEngine().use(csv).use(lookup).use(postgres);
+const engine = createEngine().use(csvReader).use(lookupTransformer).use(postgresWriter);
 ```
 
 `use()` mette il plugin in un registry; quando una Definition scrive `"type": "csv"`, il motore lo

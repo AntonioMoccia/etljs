@@ -89,7 +89,7 @@ export default plugin;
 Se ne pubblichi diversi che si installano sempre insieme, un pacchetto solo basta e avanza:
 
 ```ts
-export const plugins: Plugin[] = [castPlugin, filterPlugin, renamePlugin];
+export const transformers: Plugin[] = [castTransformer, filterTransformer, renameTransformer];
 ```
 
 Si collegano in un colpo con `useAll()`, e nelle Definition restano nomi distinti. Dai a ognuno la
@@ -243,8 +243,8 @@ Lo si collega come gli altri, e poi lo si cita nella Definition. Nessun sorgente
 toccato:
 
 ```ts
-import maiuscolo from "@acme/etl-plugin-maiuscolo";
-const engine = createEngine().use(csv).use(maiuscolo).use(postgres);
+import { maiuscoloTransformer } from "@acme/etl-plugin-maiuscolo";
+const engine = createEngine().use(csvReader).use(maiuscoloTransformer).use(postgresWriter);
 ```
 
 ```json

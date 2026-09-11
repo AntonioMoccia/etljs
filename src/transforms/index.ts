@@ -8,22 +8,22 @@
  * modificarne uno non fa comparire avvisi di versione sugli altri.
  */
 import type { Plugin } from "../contracts/index.js";
-import { castPlugin } from "./cast.js";
-import { filterPlugin } from "./filter.js";
-import { defaultPlugin } from "./default.js";
-import { renamePlugin } from "./rename.js";
-import { validatePlugin } from "./validate.js";
+import { castTransformer } from "./cast.js";
+import { filterTransformer } from "./filter.js";
+import { defaultTransformer } from "./default.js";
+import { renameTransformer } from "./rename.js";
+import { validateTransformer } from "./validate.js";
 
 /** Cio' che il loader del core cerca in un pacchetto con piu' plugin. */
-export const plugins: Plugin[] = [
-  castPlugin,
-  filterPlugin,
-  defaultPlugin,
-  renamePlugin,
-  validatePlugin,
+export const transformers: Plugin[] = [
+  castTransformer,
+  filterTransformer,
+  defaultTransformer,
+  renameTransformer,
+  validateTransformer,
 ];
 
-export { castPlugin, filterPlugin, defaultPlugin, renamePlugin, validatePlugin };
+export { castTransformer, filterTransformer, defaultTransformer, renameTransformer, validateTransformer };
 
 export { castConfigSchema, type CastConfig } from "./cast-config.js";
 export { CastErrorCodes } from "./cast.js";

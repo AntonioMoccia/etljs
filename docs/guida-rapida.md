@@ -15,11 +15,11 @@ il resto funziona, e te ne accorgi solo quando provi a scrivere davvero.
 
 ```ts
 import { createEngine, createFileInput } from "etl-js";
-import csv from "etl-js/csv";
-import postgres from "etl-js/postgres";
-import { plugins as transforms } from "etl-js/transforms";
+import { csvReader } from "etl-js/csv";
+import { postgresWriter } from "etl-js/postgres";
+import { transformers } from "etl-js/transforms";
 
-const engine = createEngine().use(csv).use(postgres).useAll(transforms);
+const engine = createEngine().use(csvReader).use(postgresWriter).useAll(transformers);
 
 const result = await engine.run(definition, {
   openInput: createFileInput({ baseDir: "/var/spool" }),
@@ -223,16 +223,16 @@ L'esempio di prima senza database. Con Postgres, gli eventi e un vero logger div
 
 ```ts
 import { createEngine, createFileInput, createPostgresProvider } from "etl-js";
-import csv from "etl-js/csv";
-import postgres from "etl-js/postgres";
-import lookup from "etl-js/lookup";
-import { plugins as transforms } from "etl-js/transforms";
+import { csvReader } from "etl-js/csv";
+import { postgresWriter } from "etl-js/postgres";
+import { lookupTransformer } from "etl-js/lookup";
+import { transformers } from "etl-js/transforms";
 
 const provider = await createPostgresProvider({
   principale: { connectionString: process.env.DATABASE_URL! },
 });
 
-const engine = createEngine().use(csv).use(postgres).use(lookup).useAll(transforms);
+const engine = createEngine().use(csvReader).use(postgresWriter).use(lookupTransformer).useAll(transformers);
 
 const result = await engine.run(definition, {
   openInput: createFileInput({ baseDir: "/var/spool" }),

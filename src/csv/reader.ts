@@ -89,7 +89,7 @@ function positional(record: string[]): Row {
   return row;
 }
 
-export const csvReader: Reader = {
+export const reader: Reader = {
   async *read(rawConfig: unknown, ctx: Ctx): AsyncIterable<Batch> {
     const config = parseCsvConfig(rawConfig);
 

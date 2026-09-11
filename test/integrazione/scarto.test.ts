@@ -12,8 +12,8 @@ import {
 } from "etl-js/contracts";
 import { Registry, createFileInput, run } from "etl-js";
 import type { HostCtx } from "etl-js";
-import csv from "etl-js/csv";
-import { castPlugin, defaultPlugin, validatePlugin } from "etl-js/transforms";
+import { csvReader } from "etl-js/csv";
+import { castTransformer, defaultTransformer, validateTransformer } from "etl-js/transforms";
 
 /**
  * Criterio della fase 5, provato dal file su disco fino alla destinazione:
@@ -100,10 +100,10 @@ function definitionFor(path: string, maxFailedRatio: number): Definition {
 
 function setup(sink: { rows: Row[]; outcome: string[] }) {
   return new Registry()
-    .register(csv)
-    .register(castPlugin)
-    .register(validatePlugin)
-    .register(defaultPlugin)
+    .register(csvReader)
+    .register(castTransformer)
+    .register(validateTransformer)
+    .register(defaultTransformer)
     .register(memoryWriter(sink));
 }
 

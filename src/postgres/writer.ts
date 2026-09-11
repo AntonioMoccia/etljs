@@ -186,7 +186,7 @@ async function* toAsyncIterable(rows: readonly unknown[][]): AsyncGenerator<read
   for (const row of rows) yield row;
 }
 
-export const postgresWriter: Writer = {
+export const writer: Writer = {
   async open(rawConfig: unknown, ctx: Ctx): Promise<WriteSession> {
     const config = parsePostgresConfig(rawConfig);
     const writerContext = requireWriterCtx(ctx);

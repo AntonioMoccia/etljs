@@ -68,6 +68,12 @@ che scattino davvero.
 importare; `use()` dice cosa partecipa a un'importazione. Il core continua a non
 conoscere alcun plugin per nome (I2).
 
+**Convenzione dei nomi: `<nome><Tipo>`.** Ogni plugin si esporta come `csvReader`,
+`postgresWriter`, `castTransformer`. Niente default export e niente `plugin`
+generico: `use(csvReader)` dice **cosa** entra nella pipeline e **con che ruolo**,
+`use(csv)` no. `etl-js/transforms` esporta anche `transformers`, l'elenco dei
+cinque, per `useAll()`.
+
 ## Contratti
 
 Le firme canoniche stanno in `src/contracts/`. Non inventarne altre. Cinque estensioni deliberate

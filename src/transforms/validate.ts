@@ -159,7 +159,7 @@ const configOf = configReader("validate", validateConfigSchema, (config) => {
   });
 });
 
-export const validateTransformer: Transformer = {
+const transformer: Transformer = {
   async transform(batch: Batch, rawConfig: unknown, ctx: Ctx): Promise<TransformResult> {
     const config = configOf(rawConfig);
     const kept: Row[] = [];
@@ -198,7 +198,7 @@ export const validateTransformer: Transformer = {
   },
 };
 
-export const validatePlugin: TransformerPlugin = {
+export const validateTransformer: TransformerPlugin = {
   manifest: {
     name: "validate",
     version: "0.1.0",
@@ -208,6 +208,6 @@ export const validatePlugin: TransformerPlugin = {
     capabilities: ["severity", "unique-per-run"],
     configSchema: z.toJSONSchema(validateConfigSchema, { io: "input" }),
   },
-  impl: validateTransformer,
+  impl: transformer,
 };
 

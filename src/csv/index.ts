@@ -1,13 +1,13 @@
 import { PROTOCOL_VERSION, type ReaderPlugin } from "../contracts/index.js";
 import { z } from "zod";
 import { csvConfigSchema } from "./config.js";
-import { csvReader } from "./reader.js";
+import { reader } from "./reader.js";
 
 /**
  * Reader CSV in streaming. Un flusso non ha mai un plugin proprio: ha solo
  * valori diversi in questa config (I8).
  */
-export const plugin: ReaderPlugin = {
+export const csvReader: ReaderPlugin = {
   manifest: {
     name: "csv",
     version: "0.1.0",
@@ -17,8 +17,7 @@ export const plugin: ReaderPlugin = {
     capabilities: ["streaming"],
     configSchema: z.toJSONSchema(csvConfigSchema, { io: "input" }),
   },
-  impl: csvReader,
+  impl: reader,
 };
 
-export default plugin;
 export { csvConfigSchema, parseCsvConfig, type CsvConfig } from "./config.js";

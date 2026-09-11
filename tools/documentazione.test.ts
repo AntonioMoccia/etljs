@@ -3,10 +3,10 @@ import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 import type { Manifest } from "etl-js/contracts";
-import csv from "etl-js/csv";
-import postgres from "etl-js/postgres";
-import lookup from "etl-js/lookup";
-import { plugins as transforms } from "etl-js/transforms";
+import { csvReader } from "etl-js/csv";
+import { postgresWriter } from "etl-js/postgres";
+import { lookupTransformer } from "etl-js/lookup";
+import { transformers } from "etl-js/transforms";
 
 /**
  * La documentazione invecchia in silenzio: si aggiunge un'opzione di config e
@@ -35,7 +35,7 @@ const DOCUMENTI = [
   "docs/piano.md",
 ];
 
-const TUTTI = [csv, ...transforms, lookup, postgres];
+const TUTTI = [csvReader, ...transformers, lookupTransformer, postgresWriter];
 
 async function leggi(relativo: string): Promise<string> {
   return readFile(join(repoRoot, relativo), "utf8");

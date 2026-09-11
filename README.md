@@ -14,11 +14,11 @@ npm install etl-js
 
 ```ts
 import { createEngine } from "etl-js";
-import csv from "etl-js/csv";
-import postgres from "etl-js/postgres";
-import { plugins as transforms } from "etl-js/transforms";
+import { csvReader } from "etl-js/csv";
+import { postgresWriter } from "etl-js/postgres";
+import { transformers } from "etl-js/transforms";
 
-const engine = createEngine().use(csv).use(postgres).useAll(transforms);
+const engine = createEngine().use(csvReader).use(postgresWriter).useAll(transformers);
 const result = await engine.run(definition, ctx);
 ```
 
@@ -118,15 +118,15 @@ in piu' e' un secondo file JSON, non un secondo pacchetto.
 
 ```ts
 import { createEngine, createFileInput, createPostgresProvider } from "etl-js";
-import csv from "etl-js/csv";
-import postgres from "etl-js/postgres";
-import { plugins as transforms } from "etl-js/transforms";
+import { csvReader } from "etl-js/csv";
+import { postgresWriter } from "etl-js/postgres";
+import { transformers } from "etl-js/transforms";
 
 const provider = await createPostgresProvider({
   principale: { connectionString: process.env.DATABASE_URL! },
 });
 
-const engine = createEngine().use(csv).use(postgres).useAll(transforms);
+const engine = createEngine().use(csvReader).use(postgresWriter).useAll(transformers);
 
 const result = await engine.run(definition, {
   // In produzione questa risolve su object storage, e i plugin non cambiano.

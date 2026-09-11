@@ -125,7 +125,7 @@ function convert(field: CastField, value: unknown): { ok: true; value: unknown }
   return { ok: true, value: text };
 }
 
-export const castTransformer: Transformer = {
+const transformer: Transformer = {
   async transform(batch: Batch, rawConfig: unknown, _ctx: Ctx): Promise<TransformResult> {
     const config = configOf(rawConfig);
     const entries = Object.entries(config);
@@ -207,7 +207,7 @@ export const castTransformer: Transformer = {
  * Le date escono come stringhe ISO, non come oggetti Date: un Batch deve
  * restare serializzabile (I3).
  */
-export const castPlugin: TransformerPlugin = {
+export const castTransformer: TransformerPlugin = {
   manifest: {
     name: "cast",
     version: "0.1.0",
@@ -217,5 +217,5 @@ export const castPlugin: TransformerPlugin = {
     capabilities: ["date", "settimane-iso", "numeri-localizzati"],
     configSchema: z.toJSONSchema(castConfigSchema, { io: "input" }),
   },
-  impl: castTransformer,
+  impl: transformer,
 };

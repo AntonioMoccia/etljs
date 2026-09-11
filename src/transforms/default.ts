@@ -54,7 +54,7 @@ function shouldFill(row: Row, field: string, when: "missing" | "empty" | "always
 
 const configOf = configReader("default", defaultConfigSchema);
 
-export const defaultTransformer: Transformer = {
+const transformer: Transformer = {
   async transform(batch: Batch, rawConfig: unknown, _ctx: Ctx): Promise<TransformResult> {
     const config = configOf(rawConfig);
     const entries = Object.entries(config.values);
@@ -93,7 +93,7 @@ export const defaultTransformer: Transformer = {
  * cosi' la tabella di atterraggio sa da dove viene ogni record senza che il
  * motore debba conoscere le colonne di nessuno (I2).
  */
-export const defaultPlugin: TransformerPlugin = {
+export const defaultTransformer: TransformerPlugin = {
   manifest: {
     name: "default",
     version: "0.1.0",
@@ -102,6 +102,6 @@ export const defaultPlugin: TransformerPlugin = {
     category: "completamento",
     configSchema: z.toJSONSchema(defaultConfigSchema, { io: "input" }),
   },
-  impl: defaultTransformer,
+  impl: transformer,
 };
 

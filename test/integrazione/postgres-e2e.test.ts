@@ -11,9 +11,9 @@ import {
   type DbProvider,
   type HostCtx,
 } from "etl-js";
-import csv from "etl-js/csv";
-import postgres from "etl-js/postgres";
-import { castPlugin } from "etl-js/transforms";
+import { csvReader } from "etl-js/csv";
+import { postgresWriter } from "etl-js/postgres";
+import { castTransformer } from "etl-js/transforms";
 
 /**
  * I criteri della fase 7 contro un Postgres vero: ri-importare lo stesso piano
@@ -50,7 +50,7 @@ function ctx(): HostCtx {
 }
 
 function registry(): Registry {
-  return new Registry().register(csv).register(castPlugin).register(postgres);
+  return new Registry().register(csvReader).register(castTransformer).register(postgresWriter);
 }
 
 /** Un file di dati: codice, quantita', data. */

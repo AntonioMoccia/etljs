@@ -61,7 +61,7 @@ const configOf = configReader("rename", renameConfigSchema, (config) => {
   }
 });
 
-export const renameTransformer: Transformer = {
+const transformer: Transformer = {
   async transform(batch: Batch, rawConfig: unknown, _ctx: Ctx): Promise<TransformResult> {
     const config = configOf(rawConfig);
     const normalize = (key: string): string => (config.trimKeys ? key.trim() : key);
@@ -111,7 +111,7 @@ export const renameTransformer: Transformer = {
   },
 };
 
-export const renamePlugin: TransformerPlugin = {
+export const renameTransformer: TransformerPlugin = {
   manifest: {
     name: "rename",
     version: "0.1.0",
@@ -120,6 +120,6 @@ export const renamePlugin: TransformerPlugin = {
     category: "struttura",
     configSchema: z.toJSONSchema(renameConfigSchema, { io: "input" }),
   },
-  impl: renameTransformer,
+  impl: transformer,
 };
 

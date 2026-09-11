@@ -138,7 +138,7 @@ function matches(rule: Condition, row: Row, path: string): boolean {
 }
 
 
-export const filterTransformer: Transformer = {
+const transformer: Transformer = {
   async transform(batch: Batch, rawConfig: unknown, _ctx: Ctx): Promise<TransformResult> {
     const config = configOf(rawConfig);
     const kept: Row[] = [];
@@ -185,7 +185,7 @@ export const filterTransformer: Transformer = {
   },
 };
 
-export const filterPlugin: TransformerPlugin = {
+export const filterTransformer: TransformerPlugin = {
   manifest: {
     name: "filter",
     version: "0.1.0",
@@ -194,6 +194,6 @@ export const filterPlugin: TransformerPlugin = {
     category: "selezione",
     configSchema: z.toJSONSchema(filterConfigSchema, { io: "input" }),
   },
-  impl: filterTransformer,
+  impl: transformer,
 };
 

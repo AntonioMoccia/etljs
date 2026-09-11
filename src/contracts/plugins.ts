@@ -67,13 +67,17 @@ export interface WriterPlugin {
 export type Plugin = ReaderPlugin | TransformerPlugin | WriterPlugin;
 
 /**
- * Forma attesa del modulo npm di un plugin.
+ * Forma di un modulo che esporta plugin. Un modulo puo' contenerne **uno** o
+ * **piu' d'uno**: un pacchetto e' un'unita' di distribuzione, un plugin
+ * un'unita' di configurazione, e non c'e' motivo perche' coincidano
+ * (`etl-js/transforms` ne porta cinque).
  *
- * Un pacchetto puo' contenerne **uno** (`export const plugin = ...`, o il
- * default export) oppure **piu' d'uno** (`export const plugins = [...]`).
- * Un pacchetto e' un'unita' di distribuzione, un plugin un'unita' di
- * configurazione: non c'e' motivo perche' coincidano. La libreria standard dei
- * transformer viaggia insieme, i plugin di terzi di solito no.
+ * Serve a chi scrive un caricatore proprio. Il motore non legge questa forma:
+ * i plugin glieli passa chi lo usa, con `use()`.
+ *
+ * Convenzione dei nomi, seguita da tutti i plugin inclusi: il nome
+ * dell'export dice **cosa** fa e **di che tipo** e', cosi' si legge
+ * dall'import - `csvReader`, `postgresWriter`, `castTransformer`.
  */
 export interface PluginModule {
   plugins?: Plugin[];

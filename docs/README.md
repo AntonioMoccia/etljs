@@ -27,10 +27,10 @@ fasi](piano.md).
 
 ```ts
 import { createEngine } from "etl-js";
-import csv from "etl-js/csv";
-import postgres from "etl-js/postgres";
+import { csvReader } from "etl-js/csv";
+import { postgresWriter } from "etl-js/postgres";
 
-const engine = createEngine().use(csv).use(postgres);
+const engine = createEngine().use(csvReader).use(postgresWriter);
 const result = await engine.run(definition, ctx);
 ```
 
@@ -40,7 +40,7 @@ Colleghi i plugin che vuoi, passi una Definition e un contesto, ottieni un `RunR
 
 ```
    i plugin li colleghi tu                 il contesto lo fornisci tu
-   createEngine().use(csv).use(postgres)   openInput / db / dbWrite / secretRef / log / signal
+   createEngine().use(csvReader).use(postgresWriter)   openInput / db / dbWrite / secretRef / log / signal
                   |                                      |
                   v                                      v
              engine.run(definition, ctx) ----------------+

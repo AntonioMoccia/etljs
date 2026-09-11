@@ -201,7 +201,7 @@ function applyEntry(
   }
 }
 
-export const lookupTransformer: Transformer = {
+export const transformer: Transformer = {
   async transform(batch: Batch, rawConfig: unknown, ctx: Ctx): Promise<TransformResult> {
     const config = configOf(rawConfig);
     if (batch.rows.length === 0) return { batch, failed: [] };
